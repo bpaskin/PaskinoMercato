@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<webservices xmlns="http://java.sun.com/xml/ns/javaee"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:mercato="http://ws.paskinomercato.it/"
+             xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+                 http://java.sun.com/xml/ns/javaee/javaee_web_services_1_2.xsd"
+             version="1.2">
+
+    <webservice-description>
+        <webservice-description-name>MercatoService</webservice-description-name>
+        <wsdl-file>WEB-INF/wsdl/MercatoService.wsdl</wsdl-file>
+        <jaxrpc-mapping-file>WEB-INF/MercatoService-mapping.xml</jaxrpc-mapping-file>
+
+        <port-component>
+            <port-component-name>MercatoServicePort</port-component-name>
+            <wsdl-port>mercato:MercatoServicePort</wsdl-port>
+            <service-endpoint-interface>it.paskinomercato.ws.MercatoServiceSEI</service-endpoint-interface>
+            <service-impl-bean>
+                <servlet-link>MercatoServiceServlet</servlet-link>
+            </service-impl-bean>
+        </port-component>
+    </webservice-description>
+</webservices>

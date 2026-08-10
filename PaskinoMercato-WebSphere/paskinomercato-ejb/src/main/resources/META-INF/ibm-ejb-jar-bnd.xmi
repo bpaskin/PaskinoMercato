@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ejbbnd:EJBJarBinding xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:ejbbnd="ejbbnd.xmi"
+    xmlns:ejb="ejb.xmi"
+    xmi:id="EJBJarBinding_1">
+
+    <ejbJar href="META-INF/ejb-jar.xml#ejb-jar_ID"/>
+
+    <ejbBindings xmi:id="EnterpriseBeanBinding_Catalogo"
+        jndiName="ejb/it/paskinomercato/ejb/catalogo/CatalogoLocalHome">
+        <enterpriseBean xmi:type="ejb:Session"
+            href="META-INF/ejb-jar.xml#CatalogoBean"/>
+    </ejbBindings>
+
+    <ejbBindings xmi:id="EnterpriseBeanBinding_Ordine"
+        jndiName="ejb/it/paskinomercato/ejb/ordine/OrdineLocalHome">
+        <enterpriseBean xmi:type="ejb:Session"
+            href="META-INF/ejb-jar.xml#OrdineBean"/>
+    </ejbBindings>
+
+    <ejbBindings xmi:id="EnterpriseBeanBinding_Cliente"
+        jndiName="ejb/it/paskinomercato/ejb/cliente/ClienteLocalHome">
+        <enterpriseBean xmi:type="ejb:Session"
+            href="META-INF/ejb-jar.xml#ClienteBean"/>
+    </ejbBindings>
+
+    <ejbBindings xmi:id="EnterpriseBeanBinding_Carrello"
+        jndiName="ejb/it/paskinomercato/ejb/carrello/CarrelloLocalHome">
+        <enterpriseBean xmi:type="ejb:Session"
+            href="META-INF/ejb-jar.xml#CarrelloBean"/>
+    </ejbBindings>
+
+    <ejbBindings xmi:id="EnterpriseBeanBinding_Mail"
+        jndiName="ejb/it/paskinomercato/ejb/mail/MailLocalHome">
+        <enterpriseBean xmi:type="ejb:Session"
+            href="META-INF/ejb-jar.xml#MailBean"/>
+    </ejbBindings>
+
+</ejbbnd:EJBJarBinding>
