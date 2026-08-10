@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<server description="PaskinoMercato Liberty Server">
+
+    <featureManager>
+        <feature>ejb-3.2</feature>
+        <feature>servlet-3.1</feature>
+        <feature>jsp-2.3</feature>
+        <feature>jndi-1.0</feature>
+        <feature>javaMail-1.5</feature>
+        <feature>jdbc-4.1</feature>
+        <feature>cdi-1.2</feature>
+        <feature>el-3.0</feature>
+        <feature>beanValidation-1.1</feature>
+        <feature>localConnector-1.0</feature>
+    </featureManager>
+
+    <httpEndpoint id="defaultHttpEndpoint"
+                  host="*"
+                  httpPort="9080"
+                  httpsPort="9443"/>
+
+    <applicationManager autoExpand="true"/>
+
+    <!-- PostgreSQL DataSource bound at java:comp/env/jdbc/MercatoDB -->
+    <!-- Driver is copied here by maven-dependency-plugin at build time -->
+    <library id="PostgreSQLLib">
+        <fileset dir="${server.config.dir}/lib" includes="postgresql-*.jar"/>
+    </library>
+
+    <dataSource id="MercatoDB" jndiName="jdbc/MercatoDB">
+        <jdbcDriver libraryRef="PostgreSQLLib"/>
+        <properties.postgresql
+            serverName="localhost"
+            portNumber="5432"
+            databaseName="mercatodb"
+            user="mercato"
+            password="changeme"
+            currentSchema="mercato"/>
+        <connectionManager maxPoolSize="10" minPoolSize="1"/>
+    </dataSource>
+
+    <!-- JavaMail Session bound at java:comp/env/mail/MercatoMail -->
+    <mailSession id="MercatoMail"
+                 jndiName="mail/MercatoMail"
+                 mailSessionID="MercatoMail"
+                 host="${mail.host}"
+                 user="${mail.user}"
+                 password="${mail.password}"
+                 from="noreply@paskinomercato.it">
+        <property name="mail.smtp.auth"            value="${mail.smtp.auth}"/>
+        <property name="mail.smtp.port"            value="${mail.smtp.port}"/>
+        <property name="mail.smtp.starttls.enable" value="${mail.smtp.starttls}"/>
+    </mailSession>
+
+    <!-- EAR application -->
+    <enterpriseApplication id="paskinomercato"
+                           location="paskinomercato-ear-1.0.0.ear"
+                           name="paskinomercato">
+        <classloader delegation="parentLast"/>
+    </enterpriseApplication>
+
+</server>
