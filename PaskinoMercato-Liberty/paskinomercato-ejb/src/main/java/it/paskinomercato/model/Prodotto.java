@@ -1,29 +1,58 @@
 package it.paskinomercato.model;
 
+import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
- * Value object representing a product row from mercato.prodotto.
- * No JPA - populated manually from JDBC ResultSet.
+ * JPA entity for mercato.prodotto.
  */
+@Entity
+@Table(name = "prodotto", schema = "mercato")
 public class Prodotto implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private int    id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private int id;
+
+    @Column(name = "codice", nullable = false, unique = true, length = 50)
     private String codice;
+
+    @Column(name = "nome_it", nullable = false, length = 200)
     private String nomeIt;
+
+    @Column(name = "nome_en", nullable = false, length = 200)
     private String nomeEn;
+
+    @Column(name = "descrizione_it")
     private String descrizioneIt;
+
+    @Column(name = "descrizione_en")
     private String descrizioneEn;
+
+    @Column(name = "prezzo", nullable = false, precision = 10, scale = 2)
     private BigDecimal prezzo;
+
+    @Column(name = "unita_misura", nullable = false, length = 20)
     private String unitaMisura;
-    private int    quantitaStock;
-    private int    categoriaId;
+
+    @Column(name = "quantita_stock", nullable = false)
+    private int quantitaStock;
+
+    @Column(name = "categoria_id", nullable = false)
+    private int categoriaId;
+
+    @Column(name = "immagine", length = 255)
     private String immagine;
+
+    @Column(name = "attivo", nullable = false)
     private boolean attivo;
-    private double  pesoKg;
+
+    @Column(name = "peso_kg", precision = 6, scale = 3)
+    private double pesoKg;
 
     public int getId()                        { return id; }
     public void setId(int id)                 { this.id = id; }

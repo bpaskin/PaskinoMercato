@@ -1,24 +1,46 @@
 package it.paskinomercato.model;
 
+import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 /**
- * Value object for mercato.ordine.
+ * JPA entity for mercato.ordine.
  */
+@Entity
+@Table(name = "ordine", schema = "mercato")
 public class Ordine implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private int       id;
-    private String    numeroOrdine;
-    private int       clienteId;
-    private int       indirizzoId;
-    private String    stato;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private int id;
+
+    @Column(name = "numero_ordine", nullable = false, unique = true, length = 30)
+    private String numeroOrdine;
+
+    @Column(name = "cliente_id", nullable = false)
+    private int clienteId;
+
+    @Column(name = "indirizzo_id", nullable = false)
+    private int indirizzoId;
+
+    @Column(name = "stato", nullable = false, length = 30)
+    private String stato;
+
+    @Column(name = "totale", nullable = false, precision = 10, scale = 2)
     private BigDecimal totale;
-    private String    note;
-    private boolean   emailInviata;
+
+    @Column(name = "note")
+    private String note;
+
+    @Column(name = "email_inviata", nullable = false)
+    private boolean emailInviata;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Timestamp createdAt;
 
     public int getId()                         { return id; }

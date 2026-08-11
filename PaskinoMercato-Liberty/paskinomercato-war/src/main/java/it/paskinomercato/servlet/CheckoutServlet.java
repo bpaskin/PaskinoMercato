@@ -1,20 +1,18 @@
 package it.paskinomercato.servlet;
 
 import it.paskinomercato.cart.CarrelloSessionBean;
-import it.paskinomercato.ejb.cliente.ClienteLocal;
-import it.paskinomercato.ejb.cliente.ClienteLocalHome;
-import it.paskinomercato.ejb.mail.MailLocal;
-import it.paskinomercato.ejb.mail.MailLocalHome;
-import it.paskinomercato.ejb.ordine.OrdineLocal;
-import it.paskinomercato.ejb.ordine.OrdineLocalHome;
+import it.paskinomercato.ejb.cliente.ClienteService;
+import it.paskinomercato.ejb.mail.MailService;
+import it.paskinomercato.ejb.ordine.OrdineService;
 import it.paskinomercato.model.Cliente;
 import it.paskinomercato.model.Indirizzo;
 import it.paskinomercato.model.Ordine;
 import it.paskinomercato.model.RigaOrdine;
 import it.paskinomercato.util.IndirizzoItaliaValidator;
 
-import javax.naming.InitialContext;
+import javax.inject.Inject;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,7 +26,17 @@ import java.util.List;
  *   Step 2 — order summary confirmation
  *   Step 3 — order placed (sends confirmation email)
  */
+@WebServlet("/checkout")
 public class CheckoutServlet extends HttpServlet {
+
+    @Inject
+    private ClienteService clienteService;
+
+    @Inject
+    private OrdineService ordineService;
+
+    @Inject
+    private MailService mailService;
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -40,12 +48,8 @@ public class CheckoutServlet extends HttpServlet {
             return;
         }
 
-        // Load addresses for the customer
         try {
-            InitialContext ic = new InitialContext();
-            ClienteLocalHome cHome = (ClienteLocalHome) ic.lookup("java:comp/env/ejb/ClienteBean");
-            ClienteLocal clienteBean = cHome.create();
-            List<Indirizzo> indirizzi = clienteBean.getIndirizzi(cliente.getId());
+            List<Indirizzo> indirizzi = clienteService.getIndirizzi(cliente.getId());
             req.setAttribute("indirizzi", indirizzi);
 
             CarrelloSessionBean carrello = (CarrelloSessionBean) session.getAttribute("carrello");
@@ -73,32 +77,26 @@ public class CheckoutServlet extends HttpServlet {
             return;
         }
 
-        String via       = req.getParameter("via");
-        String civico    = req.getParameter("civico");
-        String citta     = req.getParameter("citta");
-        String cap       = req.getParameter("cap");
-        String provincia = req.getParameter("provincia");
-        String paese     = "IT"; // forced — delivery Italy only
-        String note      = req.getParameter("note");
+        String via              = req.getParameter("via");
+        String civico           = req.getParameter("civico");
+        String citta            = req.getParameter("citta");
+        String cap              = req.getParameter("cap");
+        String provincia        = req.getParameter("provincia");
+        String paese            = "IT";
+        String note             = req.getParameter("note");
         String indirizzoIdParam = req.getParameter("indirizzoId");
 
         try {
-            InitialContext ic = new InitialContext();
-            ClienteLocalHome cHome = (ClienteLocalHome) ic.lookup("java:comp/env/ejb/ClienteBean");
-            ClienteLocal clienteBean = cHome.create();
-
             int indirizzoId = 0;
 
             if (indirizzoIdParam != null && !indirizzoIdParam.isEmpty()) {
-                // Existing address selected
                 indirizzoId = Integer.parseInt(indirizzoIdParam);
-                Indirizzo ind = clienteBean.getIndirizzo(indirizzoId);
+                Indirizzo ind = clienteService.getIndirizzo(indirizzoId);
                 if (ind == null || ind.getClienteId() != cliente.getId()) {
                     req.setAttribute("errore", "Indirizzo non valido / Invalid address");
                     doGet(req, resp);
                     return;
                 }
-                // Validate it is Italian
                 IndirizzoItaliaValidator.ValidationResult vr =
                     IndirizzoItaliaValidator.valida(ind.getPaese(), ind.getCap(), ind.getProvincia());
                 if (!vr.isValid()) {
@@ -107,7 +105,6 @@ public class CheckoutServlet extends HttpServlet {
                     return;
                 }
             } else {
-                // New address entered
                 IndirizzoItaliaValidator.ValidationResult vr =
                     IndirizzoItaliaValidator.valida(paese, cap, provincia);
                 if (!vr.isValid()) {
@@ -115,39 +112,30 @@ public class CheckoutServlet extends HttpServlet {
                     doGet(req, resp);
                     return;
                 }
-                clienteBean.aggiungiIndirizzo(cliente.getId(), via, civico, citta, cap, provincia);
-                // Retrieve the newly created address id
-                List<Indirizzo> indirizzi = clienteBean.getIndirizzi(cliente.getId());
+                clienteService.aggiungiIndirizzo(cliente.getId(), via, civico, citta, cap, provincia);
+                List<Indirizzo> indirizzi = clienteService.getIndirizzi(cliente.getId());
                 Indirizzo last = indirizzi.get(indirizzi.size() - 1);
                 indirizzoId = last.getId();
             }
 
-            // Place order
             CarrelloSessionBean carrello = (CarrelloSessionBean) session.getAttribute("carrello");
             if (carrello == null || carrello.getNumeroArticoli() == 0) {
                 resp.sendRedirect(req.getContextPath() + "/carrello");
                 return;
             }
 
-            OrdineLocalHome oHome = (OrdineLocalHome) ic.lookup("java:comp/env/ejb/OrdineBean");
-            OrdineLocal ordineBean = oHome.create();
-            String numeroOrdine = ordineBean.creaOrdine(
+            String numeroOrdine = ordineService.creaOrdine(
                 cliente.getId(), indirizzoId, carrello.getItems(), note);
 
-            // Send confirmation email
-            Ordine ordine = ordineBean.getOrdineByNumero(numeroOrdine);
-            List<RigaOrdine> righe = ordineBean.getRigheOrdine(ordine.getId());
+            Ordine ordine = ordineService.getOrdineByNumero(numeroOrdine);
+            List<RigaOrdine> righe = ordineService.getRigheOrdine(ordine.getId());
 
-            MailLocalHome mHome = (MailLocalHome) ic.lookup("java:comp/env/ejb/MailBean");
-            MailLocal mail = mHome.create();
             String lang = (String) session.getAttribute("lang");
-            mail.inviaConfermaOrdine(cliente, ordine, righe, lang != null ? lang : "it");
+            mailService.inviaConfermaOrdine(cliente, ordine, righe, lang != null ? lang : "it");
 
-            // Clear cart from session
             carrello.svuota();
             session.removeAttribute("carrello");
 
-            // Forward to confirmation page
             req.setAttribute("ordine", ordine);
             req.setAttribute("righe",  righe);
             req.getRequestDispatcher("/WEB-INF/jsp/confermaOrdine.jsp").forward(req, resp);

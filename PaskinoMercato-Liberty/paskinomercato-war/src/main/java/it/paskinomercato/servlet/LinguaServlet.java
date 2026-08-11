@@ -1,6 +1,11 @@
 package it.paskinomercato.servlet;
 
+import it.paskinomercato.ejb.cliente.ClienteService;
+import it.paskinomercato.model.Cliente;
+
+import javax.inject.Inject;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -12,7 +17,11 @@ import java.io.IOException;
  * Stores the chosen language in the session and also
  * updates the customer preference if logged in.
  */
+@WebServlet("/lingua")
 public class LinguaServlet extends HttpServlet {
+
+    @Inject
+    private ClienteService clienteService;
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -25,22 +34,15 @@ public class LinguaServlet extends HttpServlet {
         HttpSession session = req.getSession();
         session.setAttribute("lang", lang);
 
-        // Persist preference if customer is logged in
-        it.paskinomercato.model.Cliente cliente =
-            (it.paskinomercato.model.Cliente) session.getAttribute("cliente");
+        Cliente cliente = (Cliente) session.getAttribute("cliente");
         if (cliente != null) {
             try {
-                javax.naming.InitialContext ic = new javax.naming.InitialContext();
-                it.paskinomercato.ejb.cliente.ClienteLocalHome home =
-                    (it.paskinomercato.ejb.cliente.ClienteLocalHome)
-                        ic.lookup("java:comp/env/ejb/ClienteBean");
-                home.create().aggiornaLingua(cliente.getId(), lang);
+                clienteService.aggiornaLingua(cliente.getId(), lang);
                 cliente.setLingua(lang);
                 session.setAttribute("cliente", cliente);
             } catch (Exception ignored) {}
         }
 
-        // Redirect back to referer or home
         String referer = req.getHeader("Referer");
         if (referer == null || referer.isEmpty()) {
             referer = req.getContextPath() + "/";

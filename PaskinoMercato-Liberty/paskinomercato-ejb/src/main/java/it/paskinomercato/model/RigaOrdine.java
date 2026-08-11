@@ -1,22 +1,45 @@
 package it.paskinomercato.model;
 
+import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
- * Value object for mercato.riga_ordine.
+ * JPA entity for mercato.riga_ordine.
+ * subtotale is a generated (stored) column in PostgreSQL;
+ * it is mapped insertable=false, updatable=false so JPA never writes it.
  */
+@Entity
+@Table(name = "riga_ordine", schema = "mercato")
 public class RigaOrdine implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private int        id;
-    private int        ordineId;
-    private int        prodottoId;
-    private int        quantita;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private int id;
+
+    @Column(name = "ordine_id", nullable = false)
+    private int ordineId;
+
+    @Column(name = "prodotto_id", nullable = false)
+    private int prodottoId;
+
+    @Column(name = "quantita", nullable = false)
+    private int quantita;
+
+    @Column(name = "prezzo_unitario", nullable = false, precision = 10, scale = 2)
     private BigDecimal prezzoUnitario;
+
+    /** Generated stored column — never written by JPA. */
+    @Column(name = "subtotale", precision = 10, scale = 2,
+            insertable = false, updatable = false)
     private BigDecimal subtotale;
-    private String     nomeProdotto;  // denormalised for display
+
+    /** Denormalised display field — not persisted, populated by service queries. */
+    @Transient
+    private String nomeProdotto;
 
     public int getId()                               { return id; }
     public void setId(int id)                        { this.id = id; }

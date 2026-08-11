@@ -2,16 +2,17 @@
 <server description="PaskinoMercato Liberty Server">
 
     <featureManager>
-        <feature>ejb-3.2</feature>
         <feature>servlet-3.1</feature>
         <feature>jsp-2.3</feature>
         <feature>jndi-1.0</feature>
         <feature>javaMail-1.5</feature>
         <feature>jdbc-4.1</feature>
+        <feature>jpa-2.1</feature>
         <feature>cdi-1.2</feature>
         <feature>el-3.0</feature>
         <feature>beanValidation-1.1</feature>
         <feature>localConnector-1.0</feature>
+        <feature>appSecurity-2.0</feature>
     </featureManager>
 
     <httpEndpoint id="defaultHttpEndpoint"
@@ -21,13 +22,13 @@
 
     <applicationManager autoExpand="true"/>
 
-    <!-- PostgreSQL DataSource bound at java:comp/env/jdbc/MercatoDB -->
+    <!-- PostgreSQL DataSource bound at jdbc/MercatoDB -->
     <!-- Driver is copied here by maven-dependency-plugin at build time -->
     <library id="PostgreSQLLib">
         <fileset dir="${server.config.dir}/lib" includes="postgresql-*.jar"/>
     </library>
 
-    <dataSource id="MercatoDB" jndiName="jdbc/MercatoDB">
+    <dataSource id="MercatoDB" jndiName="jdbc/MercatoDB" transactional="true">
         <jdbcDriver libraryRef="PostgreSQLLib"/>
         <properties.postgresql
             serverName="localhost"
@@ -39,10 +40,11 @@
         <connectionManager maxPoolSize="10" minPoolSize="1"/>
     </dataSource>
 
-    <!-- JavaMail Session bound at java:comp/env/mail/MercatoMail -->
+    <!-- JavaMail Session bound at mail/MercatoMail -->
     <mailSession id="MercatoMail"
-                 jndiName="mail/MercatoMail"
+                 description="PaskinoMercato SMTP mail session"
                  mailSessionID="MercatoMail"
+                 jndiName="mail/MercatoMail"
                  host="${mail.host}"
                  user="${mail.user}"
                  password="${mail.password}"

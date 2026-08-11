@@ -18,7 +18,7 @@
         <dependency>
             <groupId>it.paskinomercato</groupId>
             <artifactId>paskinomercato-ejb</artifactId>
-            <type>ejb</type>
+            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>it.paskinomercato</groupId>
@@ -56,14 +56,15 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-ear-plugin</artifactId>
                 <configuration>
-                    <version>5</version>
+                    <version>6</version>
                     <defaultLibBundleDir>lib</defaultLibBundleDir>
                     <modules>
-                        <ejbModule>
+                        <jarModule>
                             <groupId>it.paskinomercato</groupId>
                             <artifactId>paskinomercato-ejb</artifactId>
                             <bundleFileName>paskinomercato-ejb.jar</bundleFileName>
-                        </ejbModule>
+                            <includeInApplicationXml>true</includeInApplicationXml>
+                        </jarModule>
                         <webModule>
                             <groupId>it.paskinomercato</groupId>
                             <artifactId>paskinomercato-war</artifactId>
@@ -82,8 +83,28 @@
                     <serverXmlFile>${project.basedir}/src/main/liberty/config/server.xml</serverXmlFile>
                     <appsDirectory>apps</appsDirectory>
                     <installAppPackages>project</installAppPackages>
+                    <!-- Download Open Liberty automatically if not already installed -->
+                    <runtimeArtifact>
+                        <groupId>io.openliberty</groupId>
+                        <artifactId>openliberty-runtime</artifactId>
+                        <version>26.0.0.7</version>
+                        <type>zip</type>
+                    </runtimeArtifact>
                 </configuration>
                 <executions>
+                    <!-- generate-resources: unpack the Liberty runtime zip -->
+                    <execution>
+                        <id>install-liberty</id>
+                        <phase>generate-resources</phase>
+                        <goals><goal>install-server</goal></goals>
+                    </execution>
+                    <!-- process-resources: create the server dir and copy server.xml so
+                         install-feature can parse the feature list from it -->
+                    <execution>
+                        <id>create-liberty-server</id>
+                        <phase>process-resources</phase>
+                        <goals><goal>create</goal></goals>
+                    </execution>
                     <execution>
                         <id>install-liberty-features</id>
                         <phase>package</phase>

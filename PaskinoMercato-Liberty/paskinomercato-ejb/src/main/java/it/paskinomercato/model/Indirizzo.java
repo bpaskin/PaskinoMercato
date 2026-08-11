@@ -1,22 +1,44 @@
 package it.paskinomercato.model;
 
+import javax.persistence.*;
 import java.io.Serializable;
 
 /**
- * Value object for mercato.indirizzo.
+ * JPA entity for mercato.indirizzo.
  */
+@Entity
+@Table(name = "indirizzo", schema = "mercato")
 public class Indirizzo implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private int     id;
-    private int     clienteId;
-    private String  via;
-    private String  civico;
-    private String  citta;
-    private String  cap;
-    private String  provincia;
-    private String  paese;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private int id;
+
+    @Column(name = "cliente_id", nullable = false)
+    private int clienteId;
+
+    @Column(name = "via", nullable = false, length = 255)
+    private String via;
+
+    @Column(name = "civico", nullable = false, length = 20)
+    private String civico;
+
+    @Column(name = "citta", nullable = false, length = 100)
+    private String citta;
+
+    @Column(name = "cap", nullable = false, length = 5)
+    private String cap;
+
+    @Column(name = "provincia", nullable = false, length = 2)
+    private String provincia;
+
+    @Column(name = "paese", nullable = false, length = 2)
+    private String paese;
+
+    @Column(name = "predefinito", nullable = false)
     private boolean predefinito;
 
     public int getId()                       { return id; }

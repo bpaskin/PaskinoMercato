@@ -1,20 +1,38 @@
 package it.paskinomercato.model;
 
+import javax.persistence.*;
 import java.io.Serializable;
 
 /**
- * Value object for mercato.categoria.
+ * JPA entity for mercato.categoria.
  */
+@Entity
+@Table(name = "categoria", schema = "mercato")
 public class Categoria implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private int    id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private int id;
+
+    @Column(name = "codice", nullable = false, unique = true, length = 50)
     private String codice;
+
+    @Column(name = "nome_it", nullable = false, length = 100)
     private String nomeIt;
+
+    @Column(name = "nome_en", nullable = false, length = 100)
     private String nomeEn;
+
+    @Column(name = "descrizione_it")
     private String descrizioneIt;
+
+    @Column(name = "descrizione_en")
     private String descrizioneEn;
+
+    @Column(name = "immagine", length = 255)
     private String immagine;
 
     public int getId()                        { return id; }

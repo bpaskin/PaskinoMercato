@@ -1,12 +1,12 @@
 package it.paskinomercato.servlet;
 
 import it.paskinomercato.cart.CarrelloSessionBean;
-import it.paskinomercato.ejb.catalogo.CatalogoLocal;
-import it.paskinomercato.ejb.catalogo.CatalogoLocalHome;
+import it.paskinomercato.ejb.catalogo.CatalogoService;
 import it.paskinomercato.model.Prodotto;
 
-import javax.naming.InitialContext;
+import javax.inject.Inject;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -16,7 +16,11 @@ import java.io.IOException;
 /**
  * Handles shopping cart operations: view, add, update, remove, clear.
  */
+@WebServlet("/carrello")
 public class CarrelloServlet extends HttpServlet {
+
+    @Inject
+    private CatalogoService catalogo;
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -33,9 +37,6 @@ public class CarrelloServlet extends HttpServlet {
         try {
             if ("aggiungi".equals(azione)) {
                 int prodottoId = Integer.parseInt(req.getParameter("prodottoId"));
-                InitialContext ic = new InitialContext();
-                CatalogoLocalHome catHome = (CatalogoLocalHome) ic.lookup("java:comp/env/ejb/CatalogoBean");
-                CatalogoLocal catalogo = catHome.create();
                 Prodotto p = catalogo.getProdottoById(prodottoId);
                 if (p != null && p.isAttivo() && p.getQuantitaStock() > 0) {
                     String lang = (String) session.getAttribute("lang");

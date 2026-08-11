@@ -1,11 +1,14 @@
 package it.paskinomercato.ejb.cliente;
 
-import javax.ejb.EJBLocalObject;
 import it.paskinomercato.model.Cliente;
 import it.paskinomercato.model.Indirizzo;
 import java.util.List;
 
-public interface ClienteLocal extends EJBLocalObject {
+/**
+ * Service interface for the Cliente CDI bean.
+ * Replaces the EJB 2.x ClienteLocal + ClienteLocalHome pair.
+ */
+public interface ClienteService {
 
     Cliente registra(String email, String passwordHash, String nome, String cognome, String telefono, String lingua);
 

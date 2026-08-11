@@ -1,12 +1,12 @@
 package it.paskinomercato.servlet;
 
-import it.paskinomercato.ejb.catalogo.CatalogoLocal;
-import it.paskinomercato.ejb.catalogo.CatalogoLocalHome;
+import it.paskinomercato.ejb.catalogo.CatalogoService;
 import it.paskinomercato.model.Categoria;
 import it.paskinomercato.model.Prodotto;
 
-import javax.naming.InitialContext;
+import javax.inject.Inject;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -16,29 +16,26 @@ import java.util.List;
 /**
  * Handles the product catalog display with pagination and category filtering.
  */
+@WebServlet("/catalogo")
 public class CatalogoServlet extends HttpServlet {
 
     private static final int PAGINA_DIM = 24;
+
+    @Inject
+    private CatalogoService catalogo;
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
         try {
-            InitialContext ic = new InitialContext();
-            CatalogoLocalHome home = (CatalogoLocalHome) ic.lookup("java:comp/env/ejb/CatalogoBean");
-            CatalogoLocal catalogo = home.create();
-
-            // Pagination
             int pagina = 1;
             try { pagina = Integer.parseInt(req.getParameter("p")); } catch (Exception ignored) {}
             if (pagina < 1) pagina = 1;
 
-            // Category filter
             String catParam = req.getParameter("cat");
             int categoriaId = 0;
             try { categoriaId = Integer.parseInt(catParam); } catch (Exception ignored) {}
 
-            // Search
             String cerca = req.getParameter("cerca");
             List<Prodotto> prodotti;
             int totaleProdotti;
@@ -59,8 +56,8 @@ public class CatalogoServlet extends HttpServlet {
             List<Categoria> categorie = catalogo.getCategorie();
             int totalePagine = (int) Math.ceil((double) totaleProdotti / PAGINA_DIM);
 
-            req.setAttribute("prodotti",      prodotti);
-            req.setAttribute("categorie",     categorie);
+            req.setAttribute("prodotti",       prodotti);
+            req.setAttribute("categorie",      categorie);
             req.setAttribute("paginaCorrente", Integer.valueOf(pagina));
             req.setAttribute("totalePagine",   Integer.valueOf(totalePagine));
             req.setAttribute("totaleProdotti", Integer.valueOf(totaleProdotti));

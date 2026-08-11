@@ -1,8 +1,8 @@
 # PaskinoMercato 🛒
 
-**Supermercato Online Italiano — JavaEE 5 / EJB 2.0 / Open Liberty**
+**Supermercato Online Italiano — CDI / JPA 2.1 / Open Liberty**
 
-Applicazione Java enterprise full-stack per un supermercato online in italiano e inglese, con consegna limitata all'Italia, tutti i prezzi in Euro e un catalogo di massimo 1.503 prodotti su database PostgreSQL.
+Applicazione Java EE enterprise per un supermercato online italiano, bilingue (🇮🇹 / 🇬🇧), consegna solo in Italia, tutti i prezzi in Euro, catalogo di massimo 1.503 prodotti su database PostgreSQL.
 
 ---
 
@@ -13,38 +13,36 @@ Applicazione Java enterprise full-stack per un supermercato online in italiano e
 3. [Struttura del Progetto](#struttura-del-progetto)
 4. [Architettura](#architettura)
 5. [Modello di Dominio](#modello-di-dominio)
-6. [EJB Beans](#ejb-beans)
+6. [Bean di Servizio](#bean-di-servizio)
 7. [Servlet](#servlet)
 8. [Pagine JSP](#pagine-jsp)
-9. [Web Service JAX-WS](#web-service-jax-ws)
-10. [Database](#database)
-11. [Prodotti e Immagini](#prodotti-e-immagini)
-12. [Supporto Bilingue](#supporto-bilingue)
-13. [Validazione Indirizzi Italiani](#validazione-indirizzi-italiani)
-14. [Prerequisiti](#prerequisiti)
-15. [Build](#build)
-16. [Configurazione del Database](#configurazione-del-database)
-17. [Configurazione Liberty](#configurazione-liberty)
-18. [Avvio con Liberty](#avvio-con-liberty)
-19. [URL dell'Applicazione](#url-dellapplicazione)
-20. [Riferimento Script](#riferimento-script)
-21. [Sostituzione delle Immagini Placeholder](#sostituzione-delle-immagini-placeholder)
+9. [Database](#database)
+10. [Prodotti e Immagini](#prodotti-e-immagini)
+11. [Supporto Bilingue](#supporto-bilingue)
+12. [Validazione Indirizzi Italiani](#validazione-indirizzi-italiani)
+13. [Prerequisiti](#prerequisiti)
+14. [Build](#build)
+15. [Configurazione del Database](#configurazione-del-database)
+16. [Configurazione Liberty](#configurazione-liberty)
+17. [Avvio con Liberty](#avvio-con-liberty)
+18. [URL dell'Applicazione](#url-dellapplicazione)
+19. [Riferimento Script](#riferimento-script)
+20. [Sostituzione delle Immagini Placeholder](#sostituzione-delle-immagini-placeholder)
 
 ---
 
 ## Panoramica
 
-PaskinoMercato è un'applicazione **JavaEE 5** enterprise distribuita come EAR su **Open Liberty**. Offre:
+PaskinoMercato è un'applicazione Java EE enterprise distribuita come EAR su **Open Liberty**. Offre:
 
 - Una vetrina di supermercato online bilingue (🇮🇹 Italiano / 🇬🇧 Inglese)
 - Catalogo prodotti con navigazione per categoria, ricerca e paginazione (max **1.503 prodotti**)
 - Carrello della spesa (POJO serializzabile in sessione HTTP)
 - Flusso di checkout completo con validazione indirizzo italiano
 - Gestione ordini con storico per cliente
-- Email di conferma ordine via **JavaMail** (HTML, bilingue)
-- Web service **JAX-WS SOAP** per integrazione con sistemi esterni
+- Email HTML di conferma ordine e registrazione via **JavaMail** (bilingue)
 - Tutti i prezzi esclusivamente in **Euro (€)**
-- Consegna **solo a indirizzi italiani** (applicata a livello applicativo e di database)
+- Consegna **solo a indirizzi italiani** — applicata a livello applicativo e di database
 
 ---
 
@@ -52,19 +50,17 @@ PaskinoMercato è un'applicazione **JavaEE 5** enterprise distribuita come EAR s
 
 | Livello | Tecnologia |
 |---|---|
-| Application Server | **Open Liberty** (features: `ejb-3.2`, `servlet-3.1`, `jsp-2.3`, `jdbc-4.1`, `javaMail-1.5`, `cdi-1.2`, `jndi-1.0`) |
-| Versione Java EE | JavaEE 5 (web-app 2.5, EJB 2.1) |
-| Bytecode Java | **Java 8** (compilato con `<release>8</release>`) |
-| Stile EJB | **EJB 2.0** — `SessionBean`, `EJBLocalHome`, `EJBLocalObject` (nessuna annotazione, nessun JPA) |
-| Transazioni EJB | **Container-Managed Transactions** (CMT) — nessun `commit`/`rollback` manuale |
-| Persistenza | **JDBC** diretto tramite JNDI `DataSource` (nessun JPA, nessun Hibernate) |
-| Database | **PostgreSQL** 15+ |
-| Web Service | **JAX-WS** (SOAP) |
-| Livello Web | **Servlet 3.1** + **JSP 2.3** |
-| Tag di Vista | **JSTL 1.2** + **EL 3.0** |
-| Carrello | POJO `CarrelloSessionBean` serializzabile in `HttpSession` |
+| Application Server | **Open Liberty 26** (feature: `servlet-3.1`, `jsp-2.3`, `jpa-2.1`, `jdbc-4.1`, `javaMail-1.5`, `cdi-1.2`, `jndi-1.0`, `el-3.0`) |
+| Sorgente / Bytecode Java | **Java 11** (`<release>11</release>`) |
+| Livello servizi | Bean CDI 1.2 `@ApplicationScoped` con JTA `@Transactional` |
+| Persistenza | **JPA 2.1** (EclipseLink) — `EntityManager` + JPQL; nessun JDBC grezzo |
+| Persistence unit | `MercatoPU` — JTA, associata a `jdbc/MercatoDB` |
+| Database | **PostgreSQL 15+** |
+| Livello web | **Servlet 3.1** + **JSP 2.3** |
+| Tag di vista | **JSTL 1.2** + **EL 3.0** |
+| Carrello | `CarrelloSessionBean` — POJO serializzabile in `HttpSession` |
 | Email | **JavaMail 1.5** tramite JNDI `mail/MercatoMail` |
-| Build | **Maven 3** (progetto EAR multi-modulo) |
+| Build | **Maven 3** — progetto EAR multi-modulo (`ejb` jar + `war` + `ear`) |
 | Lingue | Italiano (predefinito) + Inglese |
 | Valuta | Solo Euro (€) |
 
@@ -77,25 +73,26 @@ PaskinoMercato-Liberty/
 │
 ├── pom.xml                              ← POM padre (3 moduli)
 │
-├── paskinomercato-ejb/                  ← Modulo EJB 2.0
+├── paskinomercato-ejb/                  ← Modulo servizi (JAR)
 │   └── src/main/
 │       ├── java/it/paskinomercato/
 │       │   ├── ejb/
-│       │   │   ├── catalogo/            ← CatalogoBean (Stateless)
-│       │   │   ├── cliente/             ← ClienteBean  (Stateless)
-│       │   │   ├── mail/                ← MailBean      (Stateless)
-│       │   │   └── ordine/              ← OrdineBean   (Stateless)
-│       │   ├── model/                   ← Value object (nessun JPA)
+│       │   │   ├── catalogo/            ← CatalogoBean + CatalogoService
+│       │   │   ├── cliente/             ← ClienteBean  + ClienteService
+│       │   │   ├── mail/                ← MailBean      + MailService
+│       │   │   └── ordine/              ← OrdineBean   + OrdineService
+│       │   ├── model/                   ← Entità JPA (nessun JDBC grezzo)
 │       │   ├── util/                    ← IndirizzoItaliaValidator
-│       │   └── ws/                      ← SEI JAX-WS e implementazione
+│       │   └── cart/                    ← Value object CarrelloItem
 │       └── resources/
 │           ├── META-INF/
-│           │   └── ejb-jar.xml          ← Descrittore di deploy EJB 2.0
+│           │   ├── beans.xml            ← Attivazione CDI (modalità annotated)
+│           │   └── persistence.xml      ← Persistence unit JPA MercatoPU
 │           └── db/
 │               ├── schema.sql           ← DDL PostgreSQL
-│               └── seed_products.sql    ← 150 prodotti originali
+│               └── seed_products.sql    ← 150 prodotti di esempio
 │
-├── paskinomercato-war/                  ← Modulo WAR
+├── paskinomercato-war/                  ← Modulo web (WAR)
 │   └── src/main/
 │       ├── java/it/paskinomercato/
 │       │   ├── cart/
@@ -109,17 +106,14 @@ PaskinoMercato-Liberty/
 │       │       └── OrdineServlet.java
 │       └── webapp/
 │           ├── index.jsp                ← Home page
-│           ├── css/style.css            ← Foglio di stile principale
+│           ├── css/style.css
 │           ├── img/prodotti/            ← 150 immagini SVG prodotti
 │           └── WEB-INF/
-│               ├── web.xml              ← Descrittore Servlet 2.5
-│               ├── webservices.xml      ← Descrittore endpoint JAX-WS
-│               ├── wsdl/
-│               │   └── MercatoService.wsdl
+│               ├── web.xml
+│               ├── beans.xml
 │               └── jsp/
-│                   ├── include/
-│                   │   ├── header.jsp
-│                   │   └── footer.jsp
+│                   ├── include/header.jsp
+│                   ├── include/footer.jsp
 │                   ├── catalogo.jsp
 │                   ├── carrello.jsp
 │                   ├── checkout.jsp
@@ -133,15 +127,14 @@ PaskinoMercato-Liberty/
 ├── paskinomercato-ear/                  ← Modulo EAR
 │   └── src/main/
 │       ├── application/META-INF/
-│       │   └── application.xml          ← Dichiara i moduli ejb + war
+│       │   └── application.xml
 │       └── liberty/config/
-│           ├── server.xml               ← Configurazione Open Liberty
+│           ├── server.xml               ← Configurazione server Open Liberty
 │           └── bootstrap.properties     ← Variabili d'ambiente (DB, mail)
 │
-├── scripts/
-│   └── tools/
-│       ├── generate_placeholder_images.py  ← Rigenera immagini SVG prodotti
-│       └── LoadProducts.java            ← Caricatore JDBC prodotti standalone
+├── scripts/tools/
+│   ├── generate_placeholder_images.py  ← Rigenera le immagini SVG prodotti
+│   └── LoadProducts.java               ← Caricatore JDBC prodotti standalone
 │
 └── README.md
 ```
@@ -161,34 +154,35 @@ Open Liberty (porta 9080)
 │  paskinomercato-ear-1.0.0.ear                               │
 │                                                             │
 │  ┌───────────────────┐     ┌────────────────────────────┐   │
-│  │   paskinomercato  │     │  paskinomercato-ejb.jar     │   │
-│  │       .war        │     │                            │   │
-│  │                   │     │  CatalogoBean  (Stateless) │   │
-│  │  Servlet          │────▶│  OrdineBean    (Stateless) │   │
-│  │  JSP/JSTL/EL      │     │  ClienteBean   (Stateless) │   │
-│  │  Endpoint JAX-WS  │     │  MailBean      (Stateless) │   │
-│  │  File statici     │     └────────────────────────────┘   │
-│  │  (img/, css/)     │                                      │
-│  │                   │  CarrelloSessionBean (HttpSession)   │
-│  └───────────────────┘                  │                   │
-│                                         │ JDBC (CMT)        │
-└─────────────────────────────────────────┼───────────────────┘
-                                          ▼
-                                   ┌─────────────┐
-                                   │  PostgreSQL  │
-                                   │  mercatodb   │
-                                   └─────────────┘
+│  │  paskinomercato   │     │  paskinomercato-ejb.jar     │   │
+│  │      .war         │     │                            │   │
+│  │                   │     │  CDI @ApplicationScoped:   │   │
+│  │  Servlet 3.1      │────▶│  CatalogoBean              │   │
+│  │  JSP/JSTL/EL      │     │  ClienteBean               │   │
+│  │  Risorse statiche │     │  OrdineBean                │   │
+│  │  (img/, css/)     │     │  MailBean                  │   │
+│  │                   │     └────────────┬───────────────┘   │
+│  │  CarrelloSession  │                  │ JPA / EclipseLink  │
+│  │  Bean (HttpSess.) │                  │ (MercatoPU / JTA)  │
+│  └───────────────────┘                  ▼                   │
+│                                  jdbc/MercatoDB             │
+└──────────────────────────────────────┬──────────────────────┘
+                                       ▼
+                                ┌─────────────┐
+                                │  PostgreSQL  │
+                                │  mercatodb   │
+                                └─────────────┘
 ```
 
-Tutte le chiamate EJB sono **locali** (stessa JVM, stesso EAR). Il modulo WAR risolve i bean tramite `java:comp/env/ejb/NomeBean`. Le transazioni sono gestite interamente dal container EJB (CMT). Il carrello è un POJO serializzabile (`CarrelloSessionBean`) conservato direttamente in `HttpSession`.
+Tutte le chiamate ai servizi sono locali (stessa JVM, stesso EAR). Il modulo WAR inietta i bean CDI direttamente. Le transazioni JTA sono gestite dal container — nessun `commit`/`rollback` manuale. Il carrello è un POJO serializzabile (`CarrelloSessionBean`) conservato direttamente in `HttpSession`.
 
 ---
 
 ## Modello di Dominio
 
-Tutta la persistenza avviene tramite JDBC puro — nessuna annotazione JPA. I seguenti value object (POJO serializzabili) corrispondono alle righe del database:
+Tutta la persistenza avviene tramite JPA — nessun JDBC grezzo. Ogni entità corrisponde a una tabella `mercato.*`:
 
-| Classe | Tabella | Descrizione |
+| Entità | Tabella | Descrizione |
 |---|---|---|
 | [`Prodotto`](paskinomercato-ejb/src/main/java/it/paskinomercato/model/Prodotto.java) | `mercato.prodotto` | Prodotto (nome/descrizione bilingue, prezzo, stock) |
 | [`Categoria`](paskinomercato-ejb/src/main/java/it/paskinomercato/model/Categoria.java) | `mercato.categoria` | Categoria prodotti (bilingue) |
@@ -196,68 +190,66 @@ Tutta la persistenza avviene tramite JDBC puro — nessuna annotazione JPA. I se
 | [`Indirizzo`](paskinomercato-ejb/src/main/java/it/paskinomercato/model/Indirizzo.java) | `mercato.indirizzo` | Indirizzo di consegna italiano |
 | [`Ordine`](paskinomercato-ejb/src/main/java/it/paskinomercato/model/Ordine.java) | `mercato.ordine` | Testata ordine |
 | [`RigaOrdine`](paskinomercato-ejb/src/main/java/it/paskinomercato/model/RigaOrdine.java) | `mercato.riga_ordine` | Riga ordine (prodotto + qtà + prezzo) |
-| [`CarrelloItem`](paskinomercato-ejb/src/main/java/it/paskinomercato/model/CarrelloItem.java) | — | Elemento carrello (in sessione HTTP) |
+| [`CarrelloItem`](paskinomercato-ejb/src/main/java/it/paskinomercato/model/CarrelloItem.java) | — | Elemento carrello (in sessione HTTP, non persistito) |
+
+`RigaOrdine.subtotale` è una colonna generata e memorizzata da PostgreSQL; è mappata con `insertable=false, updatable=false` affinché JPA non la scriva mai. `RigaOrdine.nomeProdotto` è un campo `@Transient` per la visualizzazione, popolato da una native query con join.
 
 ---
 
-## EJB Beans
+## Bean di Servizio
 
-Tutti i bean usano lo stile **EJB 2.0**: implementano `javax.ejb.SessionBean`, espongono un'interfaccia `Local` che estende `EJBLocalObject` e un'interfaccia `LocalHome` che estende `EJBLocalHome`. Configurati tramite `ejb-jar.xml` — nessuna annotazione `@Stateless` / `@EJB`.
+Tutti i bean sono CDI `@ApplicationScoped` con JTA `@Transactional`. Vengono iniettati nelle servlet tramite `@Inject`.
 
-Le transazioni sono **Container-Managed (CMT)**. Nessun bean chiama mai `connection.commit()` o `connection.rollback()`. In caso di errore si usa `ctx.setRollbackOnly()`.
-
-### CatalogoBean — Stateless
-
-**JNDI:** `java:comp/env/ejb/CatalogoBean`
+### CatalogoBean
 
 | Metodo | Descrizione |
 |---|---|
 | `getProdotti(pagina, dim)` | Lista prodotti paginata |
 | `getProdottiPerCategoria(catId, pagina, dim)` | Prodotti filtrati per categoria |
-| `getProdottoById(id)` | Ricerca singolo prodotto per ID |
-| `getProdottoByCodice(codice)` | Ricerca prodotto per codice |
-| `cercaProdotti(testo)` | Ricerca testuale (nomi IT + EN) |
+| `getProdottoById(id)` | Singolo prodotto per ID |
+| `getProdottoByCodice(codice)` | Prodotto per codice |
+| `cercaProdotti(testo)` | Ricerca testuale (nomi IT + EN + codice) |
 | `getCategorie()` | Tutte le categorie |
-| `contaProdotti()` | Conteggio totale prodotti attivi |
+| `getCategoriaById(id)` | Singola categoria per ID |
+| `contaProdotti()` | Conteggio prodotti attivi |
+| `contaProdottiPerCategoria(catId)` | Conteggio prodotti attivi per categoria |
 | `isDisponibile(prodottoId, qty)` | Verifica disponibilità a magazzino |
 
-### OrdineBean — Stateless
-
-**JNDI:** `java:comp/env/ejb/OrdineBean`
+### OrdineBean
 
 | Metodo | Descrizione |
 |---|---|
-| `creaOrdine(clienteId, indirizzoId, items, note)` | Crea ordine + decrementa stock (CMT `Required`) |
+| `creaOrdine(clienteId, indirizzoId, items, note)` | Crea ordine, inserisce righe, decrementa stock (`@Transactional REQUIRED`) |
 | `getOrdineByNumero(numero)` | Ordine per numero |
 | `getOrdiniCliente(clienteId)` | Storico ordini del cliente |
-| `getRigheOrdine(ordineId)` | Righe dell'ordine |
+| `getRigheOrdine(ordineId)` | Righe dell'ordine con nome prodotto |
 | `aggiornaStato(ordineId, stato)` | Aggiorna stato ordine |
 
-### ClienteBean — Stateless
-
-**JNDI:** `java:comp/env/ejb/ClienteBean`
+### ClienteBean
 
 | Metodo | Descrizione |
 |---|---|
 | `registra(...)` | Registrazione nuovo cliente |
 | `login(email, pwHash)` | Autenticazione con password SHA-256 |
-| `getClienteById(id)` | Ricerca cliente per ID |
+| `getClienteById(id)` | Cliente per ID |
+| `getClienteByEmail(email)` | Cliente per email |
 | `aggiungiIndirizzo(...)` | Aggiunta indirizzo di consegna italiano |
 | `getIndirizzi(clienteId)` | Rubrica indirizzi del cliente |
+| `getIndirizzo(indirizzoId)` | Singolo indirizzo per ID |
 | `aggiornaLingua(clienteId, lang)` | Salvataggio preferenza lingua |
 
-### MailBean — Stateless
+### MailBean
 
-**JNDI:** `java:comp/env/ejb/MailBean`  
-**Sessione mail:** `java:comp/env/mail/MercatoMail`
+Sessione mail JNDI: `mail/MercatoMail`
 
 Invia email HTML in italiano o inglese:
 - `inviaConfermaOrdine(cliente, ordine, righe, lingua)` — email completa con riepilogo ordine
 - `inviaRegistrazioneConferma(cliente, lingua)` — email di benvenuto alla registrazione
+- `segnaEmailInviata(ordineId)` — imposta `email_inviata = true` nella propria transazione `REQUIRES_NEW`
 
 ### Carrello — POJO in sessione
 
-Il carrello non è più un EJB Stateful. [`CarrelloSessionBean`](paskinomercato-war/src/main/java/it/paskinomercato/cart/CarrelloSessionBean.java) è un POJO `Serializable` conservato direttamente in `HttpSession` sotto la chiave `"carrello"`. Metodi: `aggiungi`, `rimuovi`, `aggiornaQuantita`, `svuota`, `getItems`, `getTotale`, `getNumeroArticoli`.
+[`CarrelloSessionBean`](paskinomercato-war/src/main/java/it/paskinomercato/cart/CarrelloSessionBean.java) è un POJO serializzabile conservato direttamente in `HttpSession` sotto la chiave `"carrello"`. Metodi: `aggiungi`, `rimuovi`, `aggiornaQuantita`, `svuota`, `getItems`, `getTotale`, `getNumeroArticoli`.
 
 ---
 
@@ -267,7 +259,7 @@ Il carrello non è più un EJB Stateful. [`CarrelloSessionBean`](paskinomercato-
 |---|---|---|
 | [`CatalogoServlet`](paskinomercato-war/src/main/java/it/paskinomercato/servlet/CatalogoServlet.java) | `/catalogo` | Griglia prodotti con paginazione, filtro categoria, ricerca |
 | [`CarrelloServlet`](paskinomercato-war/src/main/java/it/paskinomercato/servlet/CarrelloServlet.java) | `/carrello` | Vista carrello (GET) e azioni: `aggiungi`, `rimuovi`, `aggiorna`, `svuota` (POST) |
-| [`CheckoutServlet`](paskinomercato-war/src/main/java/it/paskinomercato/servlet/CheckoutServlet.java) | `/checkout` | Selezione indirizzo + inserimento ordine + invio email |
+| [`CheckoutServlet`](paskinomercato-war/src/main/java/it/paskinomercato/servlet/CheckoutServlet.java) | `/checkout` | Selezione indirizzo + creazione ordine + invio email |
 | [`LoginServlet`](paskinomercato-war/src/main/java/it/paskinomercato/servlet/LoginServlet.java) | `/login` | Login + registrazione + logout |
 | [`LinguaServlet`](paskinomercato-war/src/main/java/it/paskinomercato/servlet/LinguaServlet.java) | `/lingua?lang=it\|en` | Cambio lingua, salvato in sessione e nel DB |
 | [`OrdineServlet`](paskinomercato-war/src/main/java/it/paskinomercato/servlet/OrdineServlet.java) | `/ordini` | Lista storico ordini e dettaglio singolo ordine |
@@ -280,7 +272,7 @@ Tutte le JSP usano **JSTL 1.2** (`c:`, `fmt:`, `fn:`) e **EL 3.0**.
 
 | JSP | Descrizione |
 |---|---|
-| [`index.jsp`](paskinomercato-war/src/main/webapp/index.jsp) | Home page con hero banner e schede funzionalità |
+| [`index.jsp`](paskinomercato-war/src/main/webapp/index.jsp) | Home page con hero banner |
 | [`catalogo.jsp`](paskinomercato-war/src/main/webapp/WEB-INF/jsp/catalogo.jsp) | Griglia prodotti, sidebar categorie, paginazione |
 | [`carrello.jsp`](paskinomercato-war/src/main/webapp/WEB-INF/jsp/carrello.jsp) | Tabella carrello con aggiornamento quantità e rimozione |
 | [`checkout.jsp`](paskinomercato-war/src/main/webapp/WEB-INF/jsp/checkout.jsp) | Form indirizzo + sidebar riepilogo ordine |
@@ -292,21 +284,6 @@ Tutte le JSP usano **JSTL 1.2** (`c:`, `fmt:`, `fn:`) e **EL 3.0**.
 | [`error500.jsp`](paskinomercato-war/src/main/webapp/WEB-INF/jsp/error500.jsp) | Pagina errore 500 |
 | [`include/header.jsp`](paskinomercato-war/src/main/webapp/WEB-INF/jsp/include/header.jsp) | Barra di navigazione: ricerca, cambio lingua, badge carrello, login/logout |
 | [`include/footer.jsp`](paskinomercato-war/src/main/webapp/WEB-INF/jsp/include/footer.jsp) | Footer: avviso consegna, informazioni pagamento |
-
----
-
-## Web Service JAX-WS
-
-L'applicazione espone un web service **SOAP** per l'integrazione con sistemi esterni (es. partner, ERP).
-
-**Endpoint:** `http://<host>:9080/paskinomercato/MercatoService`  
-**WSDL:** `http://<host>:9080/paskinomercato/MercatoService?wsdl`
-
-| Operazione | Input | Output | Descrizione |
-|---|---|---|---|
-| `getProdottoXml` | `codice: string` | Stringa XML | Dettaglio prodotto per codice |
-| `getStatoOrdine` | `numeroOrdine: string` | Stringa XML | Stato e totale dell'ordine |
-| `getCategorieXml` | *(nessuno)* | Stringa XML | Lista di tutte le categorie attive |
 
 ---
 
@@ -325,28 +302,38 @@ L'applicazione espone un web service **SOAP** per l'integrazione con sistemi est
 | `mercato.indirizzo` | Indirizzi di consegna — colonna `paese` vincolata a `'IT'` |
 | `mercato.ordine` | Ordini con flusso di stato |
 | `mercato.riga_ordine` | Righe ordine — `subtotale` è una colonna generata e memorizzata |
+| `mercato.carrello` | Carrello persistito (svuotato alla creazione dell'ordine) |
 
 ### Flusso di stato ordine
 
 ```
 IN_ATTESA → CONFERMATO → IN_PREPARAZIONE → SPEDITO → CONSEGNATO
-                                                   ↘ ANNULLATO
+                                                    ↘ ANNULLATO
 ```
 
-### JNDI DataSource
+### Persistence Unit JPA
 
-Tutti gli EJB ottengono la connessione tramite:
+Dichiarata in [`META-INF/persistence.xml`](paskinomercato-ejb/src/main/resources/META-INF/persistence.xml):
+
+```xml
+<persistence-unit name="MercatoPU" transaction-type="JTA">
+    <jta-data-source>jdbc/MercatoDB</jta-data-source>
+    ...
+</persistence-unit>
+```
+
+I bean di servizio ottengono l'`EntityManager` tramite:
 
 ```java
-InitialContext ic = new InitialContext();
-DataSource ds = (DataSource) ic.lookup("java:comp/env/jdbc/MercatoDB");
+@PersistenceContext(unitName = "MercatoPU")
+private EntityManager em;
 ```
 
 ---
 
 ## Prodotti e Immagini
 
-[`paskinomercato-ejb/src/main/resources/db/seed_products.sql`](paskinomercato-ejb/src/main/resources/db/seed_products.sql) contiene **150 prodotti originali** di un supermercato italiano, distribuiti su 10 categorie.
+[`paskinomercato-ejb/src/main/resources/db/seed_products.sql`](paskinomercato-ejb/src/main/resources/db/seed_products.sql) contiene **150 prodotti originali** di un supermercato italiano distribuiti su 10 categorie.
 
 | Categoria | Quantità | Fascia di prezzo |
 |---|---|---|
@@ -361,7 +348,7 @@ DataSource ds = (DataSource) ic.lookup("java:comp/env/jdbc/MercatoDB");
 | Dispensa | 15 | €1,29 – €12,99 |
 | Dolci e Snack | 20 | €1,99 – €14,99 |
 
-150 immagini SVG placeholder si trovano in `paskinomercato-war/src/main/webapp/img/prodotti/`. Le JSP convertono automaticamente il nome immagine dal database (`.jpg`) al file SVG con `fn:replace`:
+150 immagini SVG placeholder si trovano in `paskinomercato-war/src/main/webapp/img/prodotti/`. Il database memorizza i nomi immagine con estensione `.jpg`; le JSP convertono al volo:
 
 ```jsp
 ${fn:replace(p.immagine, '.jpg', '.svg')}
@@ -371,16 +358,16 @@ ${fn:replace(p.immagine, '.jpg', '.svg')}
 
 ## Supporto Bilingue
 
-La lingua è salvata nell'attributo di sessione `lang` (`"it"` o `"en"`). Il default è italiano.
+La lingua è salvata nell'attributo di sessione HTTP `lang` (`"it"` o `"en"`). Il default è italiano.
 
 - **Cambio lingua:** `GET /lingua?lang=it|en`
-- **Persistenza:** se autenticato, aggiorna `mercato.cliente.lingua`
+- **Persistenza:** se autenticato, aggiorna `mercato.cliente.lingua` tramite JPA
 - **Pattern JSP:**
   ```jsp
   ${lang eq 'it' ? 'Testo italiano' : 'English text'}
   ```
-- **Nomi prodotto:** `Prodotto.getNome(lang)` seleziona `nome_it` o `nome_en` dalla riga DB.
-- **Email:** `MailBean` genera il corpo HTML nella lingua del cliente.
+- **Nomi prodotto:** `Prodotto.getNome(lang)` restituisce `nomeIt` o `nomeEn`
+- **Email:** `MailBean` genera il corpo HTML nella lingua del cliente
 
 ---
 
@@ -400,7 +387,7 @@ La lingua è salvata nell'attributo di sessione `lang` (`"it"` o `"en"`). Il def
 
 | Strumento | Versione |
 |---|---|
-| Java JDK | **8** o superiore (bytecode Java 8) |
+| Java JDK | **11** o superiore |
 | Maven | 3.6+ |
 | PostgreSQL | 15+ |
 | Python | 3.x (solo per la generazione immagini SVG) |
@@ -426,7 +413,7 @@ ls paskinomercato-ear/target/paskinomercato-ear-1.0.0.ear
 ```bash
 # 1. Creare il database e l'utente
 psql -U postgres -c "CREATE DATABASE mercatodb;"
-psql -U postgres -c "CREATE USER mercato WITH PASSWORD 'latuapassword';"
+psql -U postgres -c "CREATE USER mercato WITH PASSWORD 'changeme';"
 psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE mercatodb TO mercato;"
 
 # 2. Eseguire il DDL dello schema
@@ -444,7 +431,7 @@ In alternativa, usare il caricatore Java JDBC standalone:
 cd scripts/tools
 javac -cp postgresql-42.7.3.jar LoadProducts.java
 java  -cp .:postgresql-42.7.3.jar it.paskinomercato.tools.LoadProducts \
-      localhost 5432 mercatodb mercato latuapassword \
+      localhost 5432 mercatodb mercato changeme \
       ../../paskinomercato-ejb/src/main/resources/db/seed_products.sql
 ```
 
@@ -452,7 +439,7 @@ java  -cp .:postgresql-42.7.3.jar it.paskinomercato.tools.LoadProducts \
 
 ## Configurazione Liberty
 
-Tutte le variabili d'ambiente sono in [`paskinomercato-ear/src/main/liberty/config/bootstrap.properties`](paskinomercato-ear/src/main/liberty/config/bootstrap.properties). Modificare i valori prima di avviare il server:
+Tutte le variabili d'ambiente si trovano in [`paskinomercato-ear/src/main/liberty/config/bootstrap.properties`](paskinomercato-ear/src/main/liberty/config/bootstrap.properties). Modificare i valori prima di avviare il server:
 
 ```properties
 # PostgreSQL
@@ -492,7 +479,7 @@ mvn clean package
 mvn -pl paskinomercato-ear io.openliberty.tools:liberty-maven-plugin:run
 ```
 
-> **Nota:** aggiungendo `io.openliberty.tools` a `~/.m2/settings.xml` è possibile usare il prefisso breve `liberty:dev` / `liberty:run`:
+> **Suggerimento:** aggiungendo il gruppo plugin a `~/.m2/settings.xml` è possibile usare il prefisso breve `liberty:dev` / `liberty:run`:
 > ```xml
 > <pluginGroups>
 >     <pluginGroup>io.openliberty.tools</pluginGroup>
@@ -512,8 +499,6 @@ mvn -pl paskinomercato-ear io.openliberty.tools:liberty-maven-plugin:run
 | Login / Registrazione | `http://localhost:9080/paskinomercato/login` |
 | I miei ordini | `http://localhost:9080/paskinomercato/ordini` |
 | Cambio lingua | `http://localhost:9080/paskinomercato/lingua?lang=en` |
-| Endpoint SOAP | `http://localhost:9080/paskinomercato/MercatoService` |
-| WSDL | `http://localhost:9080/paskinomercato/MercatoService?wsdl` |
 
 ---
 
@@ -534,7 +519,7 @@ mvn -pl paskinomercato-ear io.openliberty.tools:liberty-maven-plugin:run
    ```
 2. Ricompilare l'EAR — nessuna modifica al codice necessaria.
 
-Per rigenerare le immagini SVG placeholder:
+Per rigenerare tutte le immagini SVG placeholder:
 
 ```bash
 python3 scripts/tools/generate_placeholder_images.py

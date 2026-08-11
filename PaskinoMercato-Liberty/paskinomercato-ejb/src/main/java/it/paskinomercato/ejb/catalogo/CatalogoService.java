@@ -1,14 +1,14 @@
 package it.paskinomercato.ejb.catalogo;
 
-import javax.ejb.EJBLocalObject;
 import it.paskinomercato.model.Prodotto;
 import it.paskinomercato.model.Categoria;
 import java.util.List;
 
 /**
- * EJB 2.0 Local Object interface for CatalogoBean.
+ * Service interface for the Catalogo CDI bean.
+ * Replaces the EJB 2.x CatalogoLocal + CatalogoLocalHome pair.
  */
-public interface CatalogoLocal extends EJBLocalObject {
+public interface CatalogoService {
 
     List<Prodotto> getProdotti(int pagina, int dimensionePagina);
 

@@ -1,13 +1,13 @@
 package it.paskinomercato.servlet;
 
-import it.paskinomercato.ejb.ordine.OrdineLocal;
-import it.paskinomercato.ejb.ordine.OrdineLocalHome;
+import it.paskinomercato.ejb.ordine.OrdineService;
 import it.paskinomercato.model.Cliente;
 import it.paskinomercato.model.Ordine;
 import it.paskinomercato.model.RigaOrdine;
 
-import javax.naming.InitialContext;
+import javax.inject.Inject;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -19,7 +19,11 @@ import java.util.List;
  * Displays the order history for a logged-in customer,
  * and the detail for a single order.
  */
+@WebServlet("/ordini")
 public class OrdineServlet extends HttpServlet {
+
+    @Inject
+    private OrdineService ordineService;
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -32,23 +36,19 @@ public class OrdineServlet extends HttpServlet {
         }
 
         try {
-            InitialContext ic = new InitialContext();
-            OrdineLocalHome home = (OrdineLocalHome) ic.lookup("java:comp/env/ejb/OrdineBean");
-            OrdineLocal ordineBean = home.create();
-
             String numeroOrdine = req.getParameter("numero");
             if (numeroOrdine != null && !numeroOrdine.isEmpty()) {
-                Ordine ordine = ordineBean.getOrdineByNumero(numeroOrdine);
+                Ordine ordine = ordineService.getOrdineByNumero(numeroOrdine);
                 if (ordine == null || ordine.getClienteId() != cliente.getId()) {
                     resp.sendRedirect(req.getContextPath() + "/ordini");
                     return;
                 }
-                List<RigaOrdine> righe = ordineBean.getRigheOrdine(ordine.getId());
+                List<RigaOrdine> righe = ordineService.getRigheOrdine(ordine.getId());
                 req.setAttribute("ordine", ordine);
                 req.setAttribute("righe",  righe);
                 req.getRequestDispatcher("/WEB-INF/jsp/dettaglioOrdine.jsp").forward(req, resp);
             } else {
-                List<Ordine> ordini = ordineBean.getOrdiniCliente(cliente.getId());
+                List<Ordine> ordini = ordineService.getOrdiniCliente(cliente.getId());
                 req.setAttribute("ordini", ordini);
                 req.getRequestDispatcher("/WEB-INF/jsp/ordini.jsp").forward(req, resp);
             }

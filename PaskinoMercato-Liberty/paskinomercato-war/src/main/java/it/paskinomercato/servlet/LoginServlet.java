@@ -1,13 +1,12 @@
 package it.paskinomercato.servlet;
 
-import it.paskinomercato.ejb.cliente.ClienteLocal;
-import it.paskinomercato.ejb.cliente.ClienteLocalHome;
-import it.paskinomercato.ejb.mail.MailLocal;
-import it.paskinomercato.ejb.mail.MailLocalHome;
+import it.paskinomercato.ejb.cliente.ClienteService;
+import it.paskinomercato.ejb.mail.MailService;
 import it.paskinomercato.model.Cliente;
 
-import javax.naming.InitialContext;
+import javax.inject.Inject;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -18,7 +17,14 @@ import java.security.MessageDigest;
 /**
  * Handles login, logout, and customer registration.
  */
+@WebServlet("/login")
 public class LoginServlet extends HttpServlet {
+
+    @Inject
+    private ClienteService clienteService;
+
+    @Inject
+    private MailService mailService;
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -37,19 +43,15 @@ public class LoginServlet extends HttpServlet {
         String azione = req.getParameter("azione");
 
         try {
-            InitialContext ic = new InitialContext();
-            ClienteLocalHome home = (ClienteLocalHome) ic.lookup("java:comp/env/ejb/ClienteBean");
-            ClienteLocal clienteBean = home.create();
-
             if ("registra".equals(azione)) {
-                String email     = req.getParameter("email");
-                String password  = req.getParameter("password");
-                String nome      = req.getParameter("nome");
-                String cognome   = req.getParameter("cognome");
-                String telefono  = req.getParameter("telefono");
-                String lingua    = req.getParameter("lingua");
+                String email    = req.getParameter("email");
+                String password = req.getParameter("password");
+                String nome     = req.getParameter("nome");
+                String cognome  = req.getParameter("cognome");
+                String telefono = req.getParameter("telefono");
+                String lingua   = req.getParameter("lingua");
 
-                if (clienteBean.getClienteByEmail(email) != null) {
+                if (clienteService.getClienteByEmail(email) != null) {
                     req.setAttribute("errore", lingua != null && lingua.equals("en")
                         ? "Email already registered."
                         : "Email già registrata.");
@@ -58,25 +60,21 @@ public class LoginServlet extends HttpServlet {
                 }
 
                 String pwHash = sha256(password);
-                Cliente nuovo = clienteBean.registra(email, pwHash, nome, cognome, telefono, lingua);
+                Cliente nuovo = clienteService.registra(email, pwHash, nome, cognome, telefono, lingua);
                 req.getSession().setAttribute("cliente", nuovo);
                 req.getSession().setAttribute("lang", lingua != null ? lingua : "it");
 
-                // Send welcome email
-                MailLocalHome mHome = (MailLocalHome) ic.lookup("java:comp/env/ejb/MailBean");
-                MailLocal mail = mHome.create();
-                mail.inviaRegistrazioneConferma(nuovo, lingua != null ? lingua : "it");
+                mailService.inviaRegistrazioneConferma(nuovo, lingua != null ? lingua : "it");
 
                 String redirect = req.getParameter("redirect");
                 resp.sendRedirect(req.getContextPath() +
                     (redirect != null && !redirect.isEmpty() ? "/" + redirect : "/"));
 
             } else {
-                // Login
                 String email    = req.getParameter("email");
                 String password = req.getParameter("password");
                 String pwHash   = sha256(password);
-                Cliente cliente = clienteBean.login(email, pwHash);
+                Cliente cliente = clienteService.login(email, pwHash);
                 String lang     = req.getParameter("lang");
 
                 if (cliente == null) {
