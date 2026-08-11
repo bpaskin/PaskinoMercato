@@ -5,6 +5,17 @@
 # Run:
 #   wsadmin.sh -lang jython -f /absolute/path/install_paskinomercato.py
 #
+# What this script configures:
+#   1. PostgreSQL JDBC Provider + DataSource (jdbc/MercatoDB)
+#   2. J2C Authentication Alias for DB credentials
+#   3. JavaMail Session (mail/MercatoMail)
+#   4. EAR installation / update — includes all Session EJBs and the four
+#      BMP Entity EJBs (ProdottoEntityBean, CategoriaEntityBean,
+#      ClienteEntityBean, OrdineEntityBean), maps their resource references,
+#      and maps the EJB 2.1 local references to the ejblocal: namespace.
+#   5. Configuration save + node sync
+#   6. Application start
+#
 # Important:
 #   Review every value in USER CONFIGURATION before running this script.
 ###############################################################################
@@ -13,48 +24,87 @@ import os
 import sys
 import time
 import traceback
+import zipfile
+from StringIO import StringIO
 
 # =============================================================================
 # USER CONFIGURATION
 # =============================================================================
 
+# Every value can be overridden without editing this file. For example:
+#   export PASKINO_EAR_PATH=/opt/deploy/paskinomercato-ear-1.0.0.ear
+#   export PASKINO_DB_PASSWORD='secret'
+
 # This path is local to the machine on which the wsadmin client is running.
-EAR_PATH = "/opt/deploy/paskinomercato-ear-1.0.0.ear"
+EAR_PATH = os.environ.get(
+    "PASKINO_EAR_PATH",
+    "/opt/deploy/paskinomercato-ear-1.0.0.ear"
+)
 
-APP_NAME = "PaskinoMercato"
-CONTEXT_ROOT = "/paskinomercato"
+APP_NAME = os.environ.get("PASKINO_APP_NAME", "PaskinoMercato")
+CONTEXT_ROOT = os.environ.get("PASKINO_CONTEXT_ROOT", "/paskinomercato")
 
-# Values taken from the target shown in your wsadmin output.
-NODE_NAME = "node1"
-SERVER_NAME = "server1"
+# Defaults match the current target. Override them for another profile.
+NODE_NAME = os.environ.get("PASKINO_NODE_NAME", "paskinoNode1")
+SERVER_NAME = os.environ.get("PASKINO_SERVER_NAME", "brian1")
 
-JDBC_PROVIDER_NAME = "PostgreSQL JDBC Driver"
-DATA_SOURCE_NAME = "PaskinoMercato DB"
-DATA_SOURCE_JNDI = "jdbc/MercatoDB"
-J2C_ALIAS = "MercatoDBAlias"
+JDBC_PROVIDER_NAME = os.environ.get(
+    "PASKINO_JDBC_PROVIDER_NAME", "PostgreSQL JDBC Driver"
+)
+DATA_SOURCE_NAME = os.environ.get(
+    "PASKINO_DATA_SOURCE_NAME", "PaskinoMercato DB"
+)
+DATA_SOURCE_JNDI = os.environ.get(
+    "PASKINO_DATA_SOURCE_JNDI", "jdbc/MercatoDB"
+)
+J2C_ALIAS = os.environ.get("PASKINO_J2C_ALIAS", "MercatoDBAlias")
 
 # This path must be visible to the target WebSphere application-server JVM.
-POSTGRES_JAR = "/opt/jdbc/postgresql-42.7.13.jar"
+POSTGRES_JAR = os.environ.get(
+    "PASKINO_POSTGRES_JAR", "/opt/jdbc/postgresql-42.7.13.jar"
+)
 
-DB_HOST = "localhost"
-DB_PORT = "5432"
-DB_NAME = "mercatodb"
-DB_USER = "mercato"
-DB_PASSWORD = "changeme"
+DB_HOST = os.environ.get("PASKINO_DB_HOST", "localhost")
+DB_PORT = os.environ.get("PASKINO_DB_PORT", "5432")
+DB_NAME = os.environ.get("PASKINO_DB_NAME", "mercatodb")
+DB_USER = os.environ.get("PASKINO_DB_USER", "mercato")
+DB_PASSWORD = os.environ.get("PASKINO_DB_PASSWORD", "changeme")
 
-MAIL_PROVIDER_NAME = "Built-in Mail Provider"
-MAIL_SESSION_NAME = "PaskinoMercato Mail"
-MAIL_SESSION_JNDI = "mail/MercatoMail"
-MAIL_HOST = "smtp.paskinomercato.it"
-MAIL_PORT = "587"
-MAIL_USER = "noreply@paskinomercato.it"
-MAIL_PASSWORD = "changeme"
-MAIL_FROM = "noreply@paskinomercato.it"
+MAIL_PROVIDER_NAME = os.environ.get(
+    "PASKINO_MAIL_PROVIDER_NAME", "Built-in Mail Provider"
+)
+MAIL_SESSION_NAME = os.environ.get(
+    "PASKINO_MAIL_SESSION_NAME", "PaskinoMercato Mail"
+)
+MAIL_SESSION_JNDI = os.environ.get(
+    "PASKINO_MAIL_SESSION_JNDI", "mail/MercatoMail"
+)
+MAIL_HOST = os.environ.get(
+    "PASKINO_MAIL_HOST", "smtp.paskinomercato.it"
+)
+MAIL_PORT = os.environ.get("PASKINO_MAIL_PORT", "587")
+MAIL_USER = os.environ.get(
+    "PASKINO_MAIL_USER", "noreply@paskinomercato.it"
+)
+MAIL_PASSWORD = os.environ.get("PASKINO_MAIL_PASSWORD", "changeme")
+MAIL_FROM = os.environ.get(
+    "PASKINO_MAIL_FROM", "noreply@paskinomercato.it"
+)
 
-VIRTUAL_HOST = "default_host"
+VIRTUAL_HOST = os.environ.get("PASKINO_VIRTUAL_HOST", "default_host")
 
 # Number of seconds to wait for application deployment expansion before start.
 APP_READY_TIMEOUT = 120
+
+# =============================================================================
+# END OF USER CONFIGURATION
+# =============================================================================
+
+SCRIPT_REVISION = "1.2.0"
+
+EJB_MODULE_NAME = "PaskinoMercato EJB Module"
+EJB_MODULE_FILE = "paskinomercato-ejb.jar"
+EJB_MODULE_URI = EJB_MODULE_FILE + ",META-INF/ejb-jar.xml"
 
 # =============================================================================
 # GENERIC HELPERS
@@ -165,11 +215,101 @@ def getServerScopePath():
     )
 
 
+def requireNonEmpty(settingName, value):
+    if toString(value).strip() == "":
+        raise Exception("Configuration value is empty: " + settingName)
+
+
+def validateEarContents():
+    """Reject stale or incorrectly assembled EAR files before configuration."""
+    ear = None
+    ejbJar = None
+    try:
+        ear = zipfile.ZipFile(EAR_PATH, "r")
+        earEntries = ear.namelist()
+        if EJB_MODULE_FILE not in earEntries:
+            raise Exception(
+                "EAR does not contain expected module: " + EJB_MODULE_FILE
+            )
+
+        ejbBytes = ear.read(EJB_MODULE_FILE)
+        ejbJar = zipfile.ZipFile(StringIO(ejbBytes), "r")
+        ejbEntries = ejbJar.namelist()
+
+        for entryName in [
+            "META-INF/ejb-jar.xml",
+            "META-INF/ibm-ejb-jar-bnd.xmi"
+        ]:
+            if entryName not in ejbEntries:
+                raise Exception(
+                    "EJB module does not contain expected descriptor: " +
+                    entryName
+                )
+
+        ejbDescriptor = ejbJar.read("META-INF/ejb-jar.xml")
+        bindingDescriptor = ejbJar.read("META-INF/ibm-ejb-jar-bnd.xmi")
+
+        requiredEjbMarkers = [
+            "EJBLocalRef_CatalogoProdottoEntity",
+            "EJBLocalRef_CatalogoCategoriaEntity",
+            "EJBLocalRef_OrdineEntity",
+            "EJBLocalRef_ClienteEntity"
+        ]
+        for marker in requiredEjbMarkers:
+            if ejbDescriptor.find(marker) == -1:
+                raise Exception(
+                    "EAR is stale; missing EJB reference marker: " + marker
+                )
+
+        requiredResourceMarkers = [
+            "ResourceRefBinding_ProdottoMercatoDB",
+            "ResourceRefBinding_CategoriaMercatoDB",
+            "ResourceRefBinding_ClienteEntityMercatoDB",
+            "ResourceRefBinding_OrdineEntityMercatoDB"
+        ]
+        for marker in requiredResourceMarkers:
+            if bindingDescriptor.find(marker) == -1:
+                raise Exception(
+                    "EAR is stale; missing resource binding marker: " + marker
+                )
+    except Exception, e:
+        raise Exception(
+            "EAR validation failed for " + EAR_PATH + ": " + toString(e)
+        )
+    finally:
+        if ejbJar is not None:
+            ejbJar.close()
+        if ear is not None:
+            ear.close()
+
+
 def validateConfiguration():
     log("Validating configuration...")
 
     if not os.path.isfile(EAR_PATH):
         raise Exception("EAR file does not exist: " + EAR_PATH)
+
+    for setting in [
+        ["APP_NAME", APP_NAME],
+        ["CONTEXT_ROOT", CONTEXT_ROOT],
+        ["NODE_NAME", NODE_NAME],
+        ["SERVER_NAME", SERVER_NAME],
+        ["DATA_SOURCE_JNDI", DATA_SOURCE_JNDI],
+        ["DB_HOST", DB_HOST],
+        ["DB_PORT", DB_PORT],
+        ["DB_NAME", DB_NAME],
+        ["DB_USER", DB_USER],
+        ["MAIL_SESSION_JNDI", MAIL_SESSION_JNDI],
+        ["VIRTUAL_HOST", VIRTUAL_HOST]
+    ]:
+        requireNonEmpty(setting[0], setting[1])
+
+    if not CONTEXT_ROOT.startswith("/"):
+        raise Exception("CONTEXT_ROOT must start with '/': " + CONTEXT_ROOT)
+    if not DB_PORT.isdigit():
+        raise Exception("DB_PORT must be numeric: " + DB_PORT)
+
+    validateEarContents()
 
     getCellId()
     getNodeId()
@@ -192,6 +332,7 @@ def validateConfiguration():
     log("  Cell:   " + getCellName())
     log("  Target: " + NODE_NAME + "/" + SERVER_NAME)
     log("  EAR:    " + EAR_PATH)
+    log("  EJB mappings: " + toString(len(getEjbReferenceMappings())))
     log("Configuration validated.")
 
 
@@ -485,36 +626,101 @@ def getDeploymentTarget():
     )
 
 
+def getEjbReferenceMappings():
+    """Map EJB 2.1 local references to their JVM-scoped local homes."""
+    return [
+        [
+            EJB_MODULE_NAME,
+            "CatalogoBean",
+            EJB_MODULE_URI,
+            "ejb/ProdottoEntityBean",
+            "it.paskinomercato.ejb.entity.prodotto.ProdottoEntityLocalHome",
+            "ejblocal:ejb/it/paskinomercato/ejb/entity/prodotto/ProdottoEntityLocalHome"
+        ],
+        [
+            EJB_MODULE_NAME,
+            "CatalogoBean",
+            EJB_MODULE_URI,
+            "ejb/CategoriaEntityBean",
+            "it.paskinomercato.ejb.entity.categoria.CategoriaEntityLocalHome",
+            "ejblocal:ejb/it/paskinomercato/ejb/entity/categoria/CategoriaEntityLocalHome"
+        ],
+        [
+            EJB_MODULE_NAME,
+            "OrdineBean",
+            EJB_MODULE_URI,
+            "ejb/OrdineEntityBean",
+            "it.paskinomercato.ejb.entity.ordine.OrdineEntityLocalHome",
+            "ejblocal:ejb/it/paskinomercato/ejb/entity/ordine/OrdineEntityLocalHome"
+        ],
+        [
+            EJB_MODULE_NAME,
+            "ClienteBean",
+            EJB_MODULE_URI,
+            "ejb/ClienteEntityBean",
+            "it.paskinomercato.ejb.entity.cliente.ClienteEntityLocalHome",
+            "ejblocal:ejb/it/paskinomercato/ejb/entity/cliente/ClienteEntityLocalHome"
+        ]
+    ]
+
+
+def printInstallTaskInfo(taskName):
+    """Print task rows after a deployment validation failure."""
+    try:
+        warn("AdminApp task information for " + taskName + ":")
+        print AdminApp.taskInfo(EAR_PATH, taskName)
+    except Exception, e:
+        warn(
+            "Unable to read task information for " + taskName + ": " +
+            toString(e)
+        )
+
+
 def getApplicationMappings():
+    # WebSphere 8.5.5 requires explicit task data for references originating in
+    # this EJB 2.1 module, even when ejb-link is present in ejb-jar.xml.
     return [
         "-MapModulesToServers",
         [[".*", ".*", getDeploymentTarget()]],
         "-MapWebModToVH",
         [[".*", ".*", VIRTUAL_HOST]],
         "-CtxRootForWebMod",
-        [[".*", ".*", CONTEXT_ROOT]]
+        [[".*", ".*", CONTEXT_ROOT]],
+        "-MapEJBRefToEJB",
+        getEjbReferenceMappings()
     ]
 
 
 def installOrUpdateApplication():
     log("Step 4: Installing or updating application from " + EAR_PATH + "...")
 
-    if applicationIsInstalled():
-        AdminApp.update(APP_NAME, "app", [
-            "-operation", "update",
-            "-contents", EAR_PATH
-        ])
-        AdminApp.edit(APP_NAME, getApplicationMappings())
-        log("  Application content and mappings updated.")
-        return
+    try:
+        if applicationIsInstalled():
+            log("  Existing application detected; performing EAR update.")
+            updateOptions = [
+                "-operation", "update",
+                "-contents", EAR_PATH,
+                "-MapEJBRefToEJB", getEjbReferenceMappings()
+            ]
+            # Mapping data must be passed to update itself. AdminApp validates
+            # the new descriptors before a later AdminApp.edit can run.
+            AdminApp.update(APP_NAME, "app", updateOptions)
+            AdminApp.edit(APP_NAME, getApplicationMappings())
+            log("  Application content and mappings updated.")
+            return
 
-    options = [
-        "-appname", APP_NAME,
-        "-usedefaultbindings"
-    ] + getApplicationMappings()
+        log("  Application is not installed; performing fresh installation.")
+        options = [
+            "-appname", APP_NAME,
+            "-usedefaultbindings"
+        ] + getApplicationMappings()
 
-    AdminApp.install(EAR_PATH, options)
-    log("  Application installed with default resource bindings.")
+        AdminApp.install(EAR_PATH, options)
+        log("  Application installed with explicit EJB bindings.")
+    except:
+        printInstallTaskInfo("MapEJBRefToEJB")
+        printInstallTaskInfo("MapResRefToEJB")
+        raise
 
 
 # =============================================================================

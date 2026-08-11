@@ -1,11 +1,14 @@
 package it.paskinomercato.ejb.cliente;
 
+import it.paskinomercato.ejb.entity.cliente.ClienteEntityLocal;
+import it.paskinomercato.ejb.entity.cliente.ClienteEntityLocalHome;
 import it.paskinomercato.model.Cliente;
 import it.paskinomercato.model.Indirizzo;
 
 import javax.ejb.SessionBean;
 import javax.ejb.SessionContext;
 import javax.ejb.EJBException;
+import javax.ejb.FinderException;
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
 import java.sql.*;
@@ -14,7 +17,8 @@ import java.util.List;
 
 /**
  * EJB 2.0 Stateless Session Bean — Cliente.
- * Manages customer registration, authentication and addresses.
+ * Customer lookup/registration delegates to ClienteEntityBean (BMP Entity EJB).
+ * Address operations (indirizzo table) remain as direct JDBC — no entity bean exists for that table.
  */
 public class ClienteBean implements SessionBean {
 
@@ -26,53 +30,40 @@ public class ClienteBean implements SessionBean {
     public void ejbPassivate() {}
     public void setSessionContext(SessionContext ctx) { this.ctx = ctx; }
 
+    // ----------------------------------------------------------------
+    // Entity home + DataSource lookups
+    // ----------------------------------------------------------------
+    private ClienteEntityLocalHome getClienteHome() throws Exception {
+        InitialContext ic = new InitialContext();
+        return (ClienteEntityLocalHome) ic.lookup(
+            "java:comp/env/ejb/ClienteEntityBean");
+    }
+
     private Connection getConnection() throws Exception {
         InitialContext ic = new InitialContext();
         DataSource ds = (DataSource) ic.lookup("java:comp/env/jdbc/MercatoDB");
         return ds.getConnection();
     }
 
+    // ----------------------------------------------------------------
+    // Business methods — customer
+    // ----------------------------------------------------------------
+
     public Cliente registra(String email, String passwordHash, String nome,
                              String cognome, String telefono, String lingua) {
-        Connection con = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
         try {
-            con = getConnection();
-            ps = con.prepareStatement(
-                "INSERT INTO mercato.cliente (email, password_hash, nome, cognome, telefono, lingua) " +
-                "VALUES (?, ?, ?, ?, ?, ?) RETURNING id",
-                Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, email);
-            ps.setString(2, passwordHash);
-            ps.setString(3, nome);
-            ps.setString(4, cognome);
-            ps.setString(5, telefono);
-            ps.setString(6, lingua != null ? lingua : "it");
-            ps.executeUpdate();
-            rs = ps.getGeneratedKeys();
-            if (rs.next()) {
-                Cliente c = new Cliente();
-                c.setId(rs.getInt(1));
-                c.setEmail(email);
-                c.setNome(nome);
-                c.setCognome(cognome);
-                c.setTelefono(telefono);
-                c.setLingua(lingua != null ? lingua : "it");
-                c.setAttivo(true);
-                return c;
-            }
-            throw new EJBException("Registrazione fallita");
+            ClienteEntityLocalHome home = getClienteHome();
+            ClienteEntityLocal entity = home.create(email, passwordHash, nome, cognome, telefono, lingua);
+            return toValueObject(entity);
         } catch (EJBException ee) {
             throw ee;
         } catch (Exception e) {
             throw new EJBException("registra failed: " + e.getMessage(), e);
-        } finally {
-            closeQuietly(rs, ps, con);
         }
     }
 
     public Cliente login(String email, String passwordHash) {
+        // Authentication requires checking password_hash — use direct JDBC query
         Connection con = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -94,61 +85,43 @@ public class ClienteBean implements SessionBean {
     }
 
     public Cliente getClienteById(int id) {
-        Connection con = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
         try {
-            con = getConnection();
-            ps = con.prepareStatement(
-                "SELECT id, email, nome, cognome, telefono, lingua, attivo " +
-                "FROM mercato.cliente WHERE id = ?");
-            ps.setInt(1, id);
-            rs = ps.executeQuery();
-            if (rs.next()) return mapCliente(rs);
+            ClienteEntityLocalHome home = getClienteHome();
+            ClienteEntityLocal entity = home.findByPrimaryKey(id);
+            return toValueObject(entity);
+        } catch (FinderException fe) {
+            return null;
         } catch (Exception e) {
             throw new EJBException("getClienteById failed", e);
-        } finally {
-            closeQuietly(rs, ps, con);
         }
-        return null;
     }
 
     public Cliente getClienteByEmail(String email) {
-        Connection con = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
         try {
-            con = getConnection();
-            ps = con.prepareStatement(
-                "SELECT id, email, nome, cognome, telefono, lingua, attivo " +
-                "FROM mercato.cliente WHERE email = ?");
-            ps.setString(1, email);
-            rs = ps.executeQuery();
-            if (rs.next()) return mapCliente(rs);
+            ClienteEntityLocalHome home = getClienteHome();
+            ClienteEntityLocal entity = home.findByEmail(email);
+            return toValueObject(entity);
+        } catch (FinderException fe) {
+            return null;
         } catch (Exception e) {
             throw new EJBException("getClienteByEmail failed", e);
-        } finally {
-            closeQuietly(rs, ps, con);
         }
-        return null;
     }
 
     public void aggiornaLingua(int clienteId, String lingua) {
-        Connection con = null;
-        PreparedStatement ps = null;
         try {
-            con = getConnection();
-            ps = con.prepareStatement(
-                "UPDATE mercato.cliente SET lingua = ? WHERE id = ?");
-            ps.setString(1, lingua);
-            ps.setInt(2, clienteId);
-            ps.executeUpdate();
+            ClienteEntityLocalHome home = getClienteHome();
+            ClienteEntityLocal entity = home.findByPrimaryKey(clienteId);
+            entity.setLingua(lingua);
+            // ejbStore() called by container at transaction commit
         } catch (Exception e) {
             throw new EJBException("aggiornaLingua failed", e);
-        } finally {
-            closeQuietly(null, ps, con);
         }
     }
+
+    // ----------------------------------------------------------------
+    // Address methods — JDBC (no entity bean for indirizzo)
+    // ----------------------------------------------------------------
 
     public void aggiungiIndirizzo(int clienteId, String via, String civico,
                                    String citta, String cap, String provincia) {
@@ -156,7 +129,6 @@ public class ClienteBean implements SessionBean {
         PreparedStatement ps = null;
         try {
             con = getConnection();
-            // Check if first address — make it default
             PreparedStatement count = con.prepareStatement(
                 "SELECT COUNT(*) FROM mercato.indirizzo WHERE cliente_id = ?");
             count.setInt(1, clienteId);
@@ -226,6 +198,20 @@ public class ClienteBean implements SessionBean {
     }
 
     // ----------------------------------------------------------------
+    // Mappers
+    // ----------------------------------------------------------------
+    private Cliente toValueObject(ClienteEntityLocal e) {
+        Cliente c = new Cliente();
+        c.setId(e.getId());
+        c.setEmail(e.getEmail());
+        c.setNome(e.getNome());
+        c.setCognome(e.getCognome());
+        c.setTelefono(e.getTelefono());
+        c.setLingua(e.getLingua());
+        c.setAttivo(e.isAttivo());
+        return c;
+    }
+
     private Cliente mapCliente(ResultSet rs) throws SQLException {
         Cliente c = new Cliente();
         c.setId(rs.getInt(1));

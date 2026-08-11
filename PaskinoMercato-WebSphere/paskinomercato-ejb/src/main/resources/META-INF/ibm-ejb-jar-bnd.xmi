@@ -7,6 +7,7 @@
 
     <ejbJar href="META-INF/ejb-jar.xml#ejb-jar_ID"/>
 
+    <!-- Session bean JNDI home bindings -->
     <ejbBindings xmi:id="EnterpriseBeanBinding_Catalogo"
         jndiName="ejb/it/paskinomercato/ejb/catalogo/CatalogoLocalHome">
         <enterpriseBean xmi:type="ejb:Session"
@@ -35,6 +36,51 @@
         jndiName="ejb/it/paskinomercato/ejb/mail/MailLocalHome">
         <enterpriseBean xmi:type="ejb:Session"
             href="META-INF/ejb-jar.xml#MailBean"/>
+    </ejbBindings>
+
+    <!-- BMP Entity bean JNDI home bindings -->
+    <ejbBindings xmi:id="EnterpriseBeanBinding_ProdottoEntity"
+        jndiName="ejb/it/paskinomercato/ejb/entity/prodotto/ProdottoEntityLocalHome">
+        <enterpriseBean xmi:type="ejb:Entity"
+            href="META-INF/ejb-jar.xml#ProdottoEntityBean"/>
+        <resRefBindings xmi:id="ResourceRefBinding_ProdottoMercatoDB"
+            jndiName="jdbc/MercatoDB">
+            <bindingResourceRef
+                href="META-INF/ejb-jar.xml#ResourceRef_ProdottoMercatoDB"/>
+        </resRefBindings>
+    </ejbBindings>
+
+    <ejbBindings xmi:id="EnterpriseBeanBinding_CategoriaEntity"
+        jndiName="ejb/it/paskinomercato/ejb/entity/categoria/CategoriaEntityLocalHome">
+        <enterpriseBean xmi:type="ejb:Entity"
+            href="META-INF/ejb-jar.xml#CategoriaEntityBean"/>
+        <resRefBindings xmi:id="ResourceRefBinding_CategoriaMercatoDB"
+            jndiName="jdbc/MercatoDB">
+            <bindingResourceRef
+                href="META-INF/ejb-jar.xml#ResourceRef_CategoriaMercatoDB"/>
+        </resRefBindings>
+    </ejbBindings>
+
+    <ejbBindings xmi:id="EnterpriseBeanBinding_ClienteEntity"
+        jndiName="ejb/it/paskinomercato/ejb/entity/cliente/ClienteEntityLocalHome">
+        <enterpriseBean xmi:type="ejb:Entity"
+            href="META-INF/ejb-jar.xml#ClienteEntityBean"/>
+        <resRefBindings xmi:id="ResourceRefBinding_ClienteEntityMercatoDB"
+            jndiName="jdbc/MercatoDB">
+            <bindingResourceRef
+                href="META-INF/ejb-jar.xml#ResourceRef_ClienteEntityMercatoDB"/>
+        </resRefBindings>
+    </ejbBindings>
+
+    <ejbBindings xmi:id="EnterpriseBeanBinding_OrdineEntity"
+        jndiName="ejb/it/paskinomercato/ejb/entity/ordine/OrdineEntityLocalHome">
+        <enterpriseBean xmi:type="ejb:Entity"
+            href="META-INF/ejb-jar.xml#OrdineEntityBean"/>
+        <resRefBindings xmi:id="ResourceRefBinding_OrdineEntityMercatoDB"
+            jndiName="jdbc/MercatoDB">
+            <bindingResourceRef
+                href="META-INF/ejb-jar.xml#ResourceRef_OrdineEntityMercatoDB"/>
+        </resRefBindings>
     </ejbBindings>
 
 </ejbbnd:EJBJarBinding>

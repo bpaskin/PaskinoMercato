@@ -1,5 +1,7 @@
 package it.paskinomercato.ejb.ordine;
 
+import it.paskinomercato.ejb.entity.ordine.OrdineEntityLocal;
+import it.paskinomercato.ejb.entity.ordine.OrdineEntityLocalHome;
 import it.paskinomercato.model.Ordine;
 import it.paskinomercato.model.RigaOrdine;
 import it.paskinomercato.model.CarrelloItem;
@@ -7,10 +9,13 @@ import it.paskinomercato.model.CarrelloItem;
 import javax.ejb.SessionBean;
 import javax.ejb.SessionContext;
 import javax.ejb.EJBException;
+import javax.ejb.FinderException;
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -18,7 +23,8 @@ import java.util.Date;
 
 /**
  * EJB 2.0 Stateless Session Bean — Ordine.
- * Handles order creation and retrieval via direct JDBC.
+ * Single-ordine lookups and status updates delegate to OrdineEntityBean (BMP Entity EJB).
+ * creaOrdine remains here because it spans multiple tables in one transaction.
  */
 public class OrdineBean implements SessionBean {
 
@@ -30,6 +36,15 @@ public class OrdineBean implements SessionBean {
     public void ejbPassivate() {}
     public void setSessionContext(SessionContext ctx) { this.ctx = ctx; }
 
+    // ----------------------------------------------------------------
+    // Lookups
+    // ----------------------------------------------------------------
+    private OrdineEntityLocalHome getOrdineHome() throws Exception {
+        InitialContext ic = new InitialContext();
+        return (OrdineEntityLocalHome) ic.lookup(
+            "java:comp/env/ejb/OrdineEntityBean");
+    }
+
     private Connection getConnection() throws Exception {
         InitialContext ic = new InitialContext();
         DataSource ds = (DataSource) ic.lookup("java:comp/env/jdbc/MercatoDB");
@@ -38,6 +53,7 @@ public class OrdineBean implements SessionBean {
 
     // ----------------------------------------------------------------
     // creaOrdine — transactional: inserts ordine + righe_ordine + decrements stock
+    // The entity bean is used only to validate that the new ordine was created.
     // ----------------------------------------------------------------
     public String creaOrdine(int clienteId, int indirizzoId, List<CarrelloItem> carrelloItems, String note) {
         if (carrelloItems == null || carrelloItems.isEmpty()) {
@@ -50,19 +66,15 @@ public class OrdineBean implements SessionBean {
         try {
             con = getConnection();
 
-            // Calculate total
             BigDecimal totale = BigDecimal.ZERO;
             for (int i = 0; i < carrelloItems.size(); i++) {
-                CarrelloItem item = carrelloItems.get(i);
-                totale = totale.add(item.getSubtotale());
+                totale = totale.add(carrelloItems.get(i).getSubtotale());
             }
 
-            // Generate order number: ORD-YYYYMMDD-HHMMSS-clienteId
             String numeroOrdine = "ORD-" +
                 new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) +
                 "-" + clienteId;
 
-            // Insert order
             psOrdine = con.prepareStatement(
                 "INSERT INTO mercato.ordine (numero_ordine, cliente_id, indirizzo_id, stato, totale, note) " +
                 "VALUES (?, ?, ?, 'IN_ATTESA', ?, ?)",
@@ -80,7 +92,6 @@ public class OrdineBean implements SessionBean {
             }
             int ordineId = generatedKeys.getInt(1);
 
-            // Insert order lines and decrement stock
             psRiga = con.prepareStatement(
                 "INSERT INTO mercato.riga_ordine (ordine_id, prodotto_id, quantita, prezzo_unitario) " +
                 "VALUES (?, ?, ?, ?)");
@@ -100,7 +111,6 @@ public class OrdineBean implements SessionBean {
                 psStock.executeUpdate();
             }
 
-            // Clear persisted cart
             PreparedStatement psCarrello = con.prepareStatement(
                 "DELETE FROM mercato.carrello WHERE cliente_id = ?");
             psCarrello.setInt(1, clienteId);
@@ -119,50 +129,39 @@ public class OrdineBean implements SessionBean {
         }
     }
 
+    // ----------------------------------------------------------------
+    // Lookup via Entity Bean
+    // ----------------------------------------------------------------
+
     public Ordine getOrdineByNumero(String numeroOrdine) {
-        Connection con = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
         try {
-            con = getConnection();
-            ps = con.prepareStatement(
-                "SELECT id, numero_ordine, cliente_id, indirizzo_id, stato, totale, note, email_inviata, created_at " +
-                "FROM mercato.ordine WHERE numero_ordine = ?");
-            ps.setString(1, numeroOrdine);
-            rs = ps.executeQuery();
-            if (rs.next()) return mapOrdine(rs);
+            OrdineEntityLocalHome home = getOrdineHome();
+            OrdineEntityLocal entity = home.findByNumeroOrdine(numeroOrdine);
+            return toValueObject(entity);
+        } catch (FinderException fe) {
+            return null;
         } catch (Exception e) {
             throw new EJBException("getOrdineByNumero failed", e);
-        } finally {
-            closeQuietly(rs, ps, con);
         }
-        return null;
     }
 
     public List<Ordine> getOrdiniCliente(int clienteId) {
-        List<Ordine> list = new ArrayList<Ordine>();
-        Connection con = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
         try {
-            con = getConnection();
-            ps = con.prepareStatement(
-                "SELECT id, numero_ordine, cliente_id, indirizzo_id, stato, totale, note, email_inviata, created_at " +
-                "FROM mercato.ordine WHERE cliente_id = ? ORDER BY created_at DESC");
-            ps.setInt(1, clienteId);
-            rs = ps.executeQuery();
-            while (rs.next()) {
-                list.add(mapOrdine(rs));
+            OrdineEntityLocalHome home = getOrdineHome();
+            Collection<OrdineEntityLocal> col =
+                (Collection<OrdineEntityLocal>) home.findByClienteId(clienteId);
+            List<Ordine> list = new ArrayList<Ordine>();
+            for (Iterator<OrdineEntityLocal> it = col.iterator(); it.hasNext();) {
+                list.add(toValueObject(it.next()));
             }
+            return list;
         } catch (Exception e) {
             throw new EJBException("getOrdiniCliente failed", e);
-        } finally {
-            closeQuietly(rs, ps, con);
         }
-        return list;
     }
 
     public List<RigaOrdine> getRigheOrdine(int ordineId) {
+        // No entity bean for riga_ordine — JDBC remains
         List<RigaOrdine> list = new ArrayList<RigaOrdine>();
         Connection con = null;
         PreparedStatement ps = null;
@@ -196,34 +195,30 @@ public class OrdineBean implements SessionBean {
     }
 
     public void aggiornaStato(int ordineId, String nuovoStato) {
-        Connection con = null;
-        PreparedStatement ps = null;
         try {
-            con = getConnection();
-            ps = con.prepareStatement(
-                "UPDATE mercato.ordine SET stato = ?, updated_at = NOW() WHERE id = ?");
-            ps.setString(1, nuovoStato);
-            ps.setInt(2, ordineId);
-            ps.executeUpdate();
+            OrdineEntityLocalHome home = getOrdineHome();
+            OrdineEntityLocal entity = home.findByPrimaryKey(ordineId);
+            entity.setStato(nuovoStato);
+            // ejbStore() called by container at transaction commit
+        } catch (FinderException fe) {
+            throw new EJBException("aggiornaStato: ordine not found " + ordineId, fe);
         } catch (Exception e) {
             throw new EJBException("aggiornaStato failed", e);
-        } finally {
-            closeQuietly(null, ps, con);
         }
     }
 
     // ----------------------------------------------------------------
-    private Ordine mapOrdine(ResultSet rs) throws SQLException {
+    private Ordine toValueObject(OrdineEntityLocal e) {
         Ordine o = new Ordine();
-        o.setId(rs.getInt(1));
-        o.setNumeroOrdine(rs.getString(2));
-        o.setClienteId(rs.getInt(3));
-        o.setIndirizzoId(rs.getInt(4));
-        o.setStato(rs.getString(5));
-        o.setTotale(rs.getBigDecimal(6));
-        o.setNote(rs.getString(7));
-        o.setEmailInviata(rs.getBoolean(8));
-        o.setCreatedAt(rs.getTimestamp(9));
+        o.setId(e.getId());
+        o.setNumeroOrdine(e.getNumeroOrdine());
+        o.setClienteId(e.getClienteId());
+        o.setIndirizzoId(e.getIndirizzoId());
+        o.setStato(e.getStato());
+        o.setTotale(e.getTotale());
+        o.setNote(e.getNote());
+        o.setEmailInviata(e.isEmailInviata());
+        o.setCreatedAt(e.getCreatedAt());
         return o;
     }
 

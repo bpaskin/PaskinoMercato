@@ -6,7 +6,7 @@ In WebSphere Admin Console:
 - Resources → JDBC → JDBC Providers → New
   - Provider type: User-defined
   - Implementation: `org.postgresql.ds.PGConnectionPoolDataSource`
-  - Classpath: `/path/to/postgresql-42.7.3.jar`
+  - Classpath: `/path/to/postgresql-42.7.13.jar`
 - Resources → JDBC → Data Sources → New
   - JNDI name: `jdbc/MercatoDB`
   - Database: `mercatodb`

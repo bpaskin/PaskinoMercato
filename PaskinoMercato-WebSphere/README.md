@@ -1,6 +1,6 @@
 # PaskinoMercato 🛒
 
-**Supermercato Online Italiano — JavaEE 5 / EJB 2.0 / WebSphere Application Server 8.5.5**
+**Supermercato Online Italiano — JavaEE 5 / EJB 2.1 / WebSphere Application Server 8.5.5**
 
 Applicazione Java enterprise full-stack per un supermercato online in italiano e inglese, con consegna limitata all'Italia, tutti i prezzi in Euro e un catalogo di massimo 1.503 prodotti su database PostgreSQL.
 
@@ -55,7 +55,7 @@ PaskinoMercato è una classica applicazione **JavaEE 5** enterprise distribuita 
 | Application Server | IBM WebSphere Application Server **8.5.5** |
 | Versione Java EE | JavaEE 5 (web-app 2.5, EJB 2.1) |
 | Bytecode Java | **Java 8** (compilato con `<release>8</release>`) |
-| Stile EJB | **EJB 2.0** — `SessionBean`, `EJBLocalHome`, `EJBLocalObject` (nessuna annotazione, nessun JPA) |
+| Stile EJB | **EJB 2.1** — `SessionBean`, `EJBLocalHome`, `EJBLocalObject` (nessuna annotazione, nessun JPA) |
 | Transazioni EJB | **Container-Managed Transactions** (CMT) — nessun `commit`/`rollback` manuale |
 | Persistenza | **JDBC** diretto tramite JNDI `DataSource` (nessun JPA, nessun Hibernate) |
 | Database | **PostgreSQL** 15+ |
@@ -77,13 +77,18 @@ paskinomercato/
 │
 ├── pom.xml                              ← POM padre (3 moduli)
 │
-├── paskinomercato-ejb/                  ← Modulo EJB 2.0
+├── paskinomercato-ejb/                  ← Modulo EJB 2.1
 │   └── src/main/
 │       ├── java/it/paskinomercato/
 │       │   ├── ejb/
 │       │   │   ├── carrello/            ← CarrelloBean (Stateful)
 │       │   │   ├── catalogo/            ← CatalogoBean (Stateless)
 │       │   │   ├── cliente/             ← ClienteBean  (Stateless)
+│       │   │   ├── entity/              ← Entity Bean BMP EJB 2.1
+│       │   │   │   ├── prodotto/        ← ProdottoEntityBean + Local/Home
+│       │   │   │   ├── categoria/       ← CategoriaEntityBean + Local/Home
+│       │   │   │   ├── cliente/         ← ClienteEntityBean + Local/Home
+│       │   │   │   └── ordine/          ← OrdineEntityBean + Local/Home
 │       │   │   ├── mail/                ← MailBean      (Stateless)
 │       │   │   └── ordine/              ← OrdineBean   (Stateless)
 │       │   ├── model/                   ← Value object (nessun JPA)
@@ -91,7 +96,7 @@ paskinomercato/
 │       │   └── ws/                      ← SEI JAX-RPC, implementazione e wrapper bean
 │       └── resources/
 │           ├── META-INF/
-│           │   ├── ejb-jar.xml          ← Descrittore di deploy EJB 2.0
+│           │   ├── ejb-jar.xml          ← Descrittore di deploy EJB 2.1
 │           │   └── ibm-ejb-jar-bnd.xmi  ← Binding JNDI EJB WebSphere
 │           └── db/
 │               ├── schema.sql           ← DDL PostgreSQL
@@ -140,9 +145,7 @@ paskinomercato/
 │
 ├── scripts/
 │   ├── wsadmin/
-│   │   ├── install_paskinomercato.py    ← Installazione completa (wsadmin Jython)
-│   │   ├── uninstall_paskinomercato.py  ← Disinstallazione completa
-│   │   └── check_paskinomercato.py      ← Verifica post-deploy
+│   │   └── install_paskinomercato.py    ← Installazione/aggiornamento/disinstallazione (wsadmin Jython)
 │   └── tools/
 │       ├── generate_placeholder_images.py  ← Rigenera immagini SVG prodotti
 │       └── LoadProducts.java            ← Caricatore JDBC prodotti standalone
@@ -168,13 +171,15 @@ WebSphere HTTP Server (porta 9080)
 │  ┌───────────────────┐     ┌────────────────────────────┐   │
 │  │   paskinomercato  │     │  paskinomercato-ejb.jar     │   │
 │  │       .war        │     │                            │   │
-│  │                   │     │  CatalogoBean  (Stateless) │   │
-│  │  Servlet          │────▶│  OrdineBean    (Stateless) │   │
-│  │  JSP/JSTL/EL      │     │  ClienteBean   (Stateless) │   │
-│  │  Endpoint JAX-RPC │     │  CarrelloBean  (Stateful)  │   │
-│  │  File statici     │     │  MailBean      (Stateless) │   │
-│  │  (img/, css/)     │     └────────────────────────────┘   │
-│  └───────────────────┘                  │                   │
+│  │                   │     │  Session EJB:              │   │
+│  │  Servlet          │────▶│   Catalogo, Ordine, Cliente  │   │
+│  │  JSP/JSTL/EL      │     │   Carrello, Mail            │   │
+│  │  Endpoint JAX-RPC │     │             │              │   │
+│  │  File statici     │     │             ▼              │   │
+│  │  (img/, css/)     │     │  BMP Entity EJB:           │   │
+│  │                   │     │   Prodotto, Categoria,      │   │
+│  │                   │     │   Cliente, Ordine           │   │
+│  └───────────────────┘     └────────────────────────────┘   │
 │                                         │ JDBC (CMT XA)     │
 └─────────────────────────────────────────┼───────────────────┘
                                           ▼
@@ -184,7 +189,7 @@ WebSphere HTTP Server (porta 9080)
                                    └─────────────┘
 ```
 
-Tutte le chiamate EJB sono **locali** (stessa JVM, stesso EAR). Nessun EJB remoto. Il modulo WAR risolve i bean tramite `java:comp/env/ejb/NomeBean`. Le transazioni sono gestite interamente dal container EJB (CMT).
+Tutte le chiamate EJB sono **locali** (stessa JVM, stesso EAR). Nessun EJB remoto. Il modulo WAR risolve i Session Bean tramite `java:comp/env/ejb/NomeBean`; i Session Bean accedono agli Entity Bean tramite i rispettivi riferimenti `java:comp/env/ejb/*EntityBean`. Le transazioni sono gestite interamente dal container EJB (CMT).
 
 ---
 
@@ -206,9 +211,40 @@ Tutta la persistenza avviene tramite JDBC puro — nessuna annotazione JPA. I se
 
 ## EJB Beans
 
-Tutti i bean usano lo stile **EJB 2.0**: implementano `javax.ejb.SessionBean`, espongono un'interfaccia `Local` che estende `EJBLocalObject` e un'interfaccia `LocalHome` che estende `EJBLocalHome`. Configurati interamente tramite `ejb-jar.xml` — nessuna annotazione `@Stateless` / `@EJB`.
+Tutti i bean usano lo stile **EJB 2.1** e sono configurati tramite `ejb-jar.xml`, senza annotazioni `@Stateless`, `@Entity`, `@EJB` o JPA. I cinque Session Bean implementano `javax.ejb.SessionBean`; i quattro Entity Bean BMP implementano `javax.ejb.EntityBean`. Tutti espongono esclusivamente interfacce `Local`/`LocalHome`.
 
 Le transazioni sono **Container-Managed (CMT)**. Nessun bean chiama mai `connection.commit()`, `connection.rollback()` o `connection.setAutoCommit()` — queste operazioni sono vietate con connessioni XA globali. In caso di errore si usa `ctx.setRollbackOnly()`.
+
+### Entity Beans BMP
+
+Il modulo contiene quattro **Bean-Managed Persistence Entity Bean**. Non sono
+entità JPA: ogni bean implementa esplicitamente il ciclo di vita EJB 2.1 e le
+operazioni SQL nei metodi `ejbCreate`, `ejbLoad`, `ejbStore`, `ejbRemove` ed
+`ejbFind*`. La chiave primaria di tutti gli Entity Bean è `java.lang.Integer`.
+
+| Entity Bean | Tabella | Finder principali | Session Bean utilizzatore |
+|---|---|---|---|
+| `ProdottoEntityBean` | `mercato.prodotto` | `findByPrimaryKey`, `findAll`, `findByCategoriaId`, `findByAttivo`, `findByCodice`, `findByNomeContaining` | `CatalogoBean` |
+| `CategoriaEntityBean` | `mercato.categoria` | `findByPrimaryKey`, `findAll`, `findByCodice` | `CatalogoBean` |
+| `ClienteEntityBean` | `mercato.cliente` | `findByPrimaryKey`, `findByEmail`, `findByAttivo` | `ClienteBean` |
+| `OrdineEntityBean` | `mercato.ordine` | `findByPrimaryKey`, `findByNumeroOrdine`, `findByClienteId` | `OrdineBean` |
+
+Ogni Entity Bean dichiara il riferimento DataSource
+`java:comp/env/jdbc/MercatoDB`, associato dal binding WebSphere alla risorsa
+globale `jdbc/MercatoDB`. I riferimenti usati dai Session Bean sono:
+
+| Componente chiamante | Riferimento component environment | Home locale WebSphere |
+|---|---|---|
+| `CatalogoBean` | `java:comp/env/ejb/ProdottoEntityBean` | `ejblocal:ejb/it/paskinomercato/ejb/entity/prodotto/ProdottoEntityLocalHome` |
+| `CatalogoBean` | `java:comp/env/ejb/CategoriaEntityBean` | `ejblocal:ejb/it/paskinomercato/ejb/entity/categoria/CategoriaEntityLocalHome` |
+| `ClienteBean` | `java:comp/env/ejb/ClienteEntityBean` | `ejblocal:ejb/it/paskinomercato/ejb/entity/cliente/ClienteEntityLocalHome` |
+| `OrdineBean` | `java:comp/env/ejb/OrdineEntityBean` | `ejblocal:ejb/it/paskinomercato/ejb/entity/ordine/OrdineEntityLocalHome` |
+
+`ibm-ejb-jar-bnd.xmi` contiene i binding delle home e dei resource reference.
+Durante installazione o aggiornamento,
+`scripts/wsadmin/install_paskinomercato.py` fornisce esplicitamente a
+`MapEJBRefToEJB` i quattro mapping verso il namespace JVM-scoped `ejblocal:`.
+Questo passaggio è obbligatorio su WebSphere 8.5.5 per il modulo EJB 2.1.
 
 ### CatalogoBean — Stateless
 
@@ -216,14 +252,16 @@ Le transazioni sono **Container-Managed (CMT)**. Nessun bean chiama mai `connect
 
 | Metodo | Descrizione |
 |---|---|
-| `getProdotti(pagina, dim)` | Lista prodotti paginata |
-| `getProdottiPerCategoria(catId, pagina, dim)` | Prodotti filtrati per categoria |
+| `getProdotti(pagina, dimensionePagina)` | Lista prodotti paginata |
+| `getProdottiPerCategoria(categoriaId, pagina, dimensionePagina)` | Prodotti filtrati per categoria |
 | `getProdottoById(id)` | Ricerca singolo prodotto per ID |
 | `getProdottoByCodice(codice)` | Ricerca prodotto per codice |
 | `cercaProdotti(testo)` | Ricerca testuale (nomi IT + EN) |
 | `getCategorie()` | Tutte le categorie |
+| `getCategoriaById(id)` | Singola categoria per ID |
 | `contaProdotti()` | Conteggio totale prodotti attivi |
-| `isDisponibile(prodottoId, qty)` | Verifica disponibilità a magazzino |
+| `contaProdottiPerCategoria(categoriaId)` | Conteggio prodotti per categoria |
+| `isDisponibile(prodottoId, quantita)` | Verifica disponibilità a magazzino |
 
 ### OrdineBean — Stateless
 
@@ -243,12 +281,14 @@ Le transazioni sono **Container-Managed (CMT)**. Nessun bean chiama mai `connect
 
 | Metodo | Descrizione |
 |---|---|
-| `registra(...)` | Registrazione nuovo cliente |
-| `login(email, pwHash)` | Autenticazione con password SHA-256 |
-| `getClienteById(id)` | Ricerca cliente per ID |
-| `aggiungiIndirizzo(...)` | Aggiunta indirizzo di consegna italiano |
+| `registra(email, passwordHash, nome, cognome, telefono, lingua)` | Registrazione nuovo cliente tramite `ClienteEntityBean` |
+| `login(email, passwordHash)` | Autenticazione con password SHA-256 (JDBC diretto) |
+| `getClienteById(id)` | Ricerca cliente per ID tramite entity bean |
+| `getClienteByEmail(email)` | Ricerca cliente per indirizzo email |
+| `aggiornaLingua(clienteId, lingua)` | Salvataggio preferenza lingua (aggiorna entity bean) |
+| `aggiungiIndirizzo(clienteId, via, civico, citta, cap, provincia)` | Aggiunta indirizzo di consegna italiano (JDBC diretto) |
 | `getIndirizzi(clienteId)` | Rubrica indirizzi del cliente |
-| `aggiornaLingua(clienteId, lang)` | Salvataggio preferenza lingua |
+| `getIndirizzo(indirizzoId)` | Singolo indirizzo per ID |
 
 ### CarrelloBean — **Stateful**
 
@@ -470,14 +510,20 @@ Il database applica inoltre `paese = 'IT'` tramite un vincolo `CHECK` su `mercat
 
 ```bash
 # Navigare nella cartella radice del progetto
-cd PaskinoMercato
+cd PaskinoMercato-WebSphere
 
 # Build completa — genera l'EAR in paskinomercato-ear/target/
 mvn clean package
 
 # Artefatto deployabile
 ls paskinomercato-ear/target/paskinomercato-ear-1.0.0.ear
+
+# Registrare l'hash dell'EAR che verrà copiato sul server
+sha256sum paskinomercato-ear/target/paskinomercato-ear-1.0.0.ear
 ```
+
+L'installer controlla il contenuto dell'EAR prima di modificare WebSphere e rifiuta
+automaticamente artefatti vecchi privi dei binding EJB/resource richiesti.
 
 ---
 
@@ -512,7 +558,16 @@ java  -cp .:postgresql-42.7.3.jar it.paskinomercato.tools.LoadProducts \
 
 ## Configurazione WebSphere
 
-Queste risorse devono essere create in WebSphere **prima** di distribuire l'EAR.
+Lo script `install_paskinomercato.py` crea o aggiorna automaticamente JDBC Provider,
+alias J2C, DataSource e sessione JavaMail. Prima dell'esecuzione devono esistere solo:
+
+- il nodo e il server di destinazione;
+- il virtual host (per impostazione predefinita `default_host`);
+- il `Built-in Mail Provider` a livello cella, nodo o server;
+- il driver PostgreSQL nel percorso visibile alla JVM del server.
+
+Le sezioni seguenti descrivono le risorse generate dallo script e sono utili anche
+per verificarle dalla console amministrativa.
 
 ### 1. JDBC Provider PostgreSQL
 
@@ -522,7 +577,7 @@ Queste risorse devono essere create in WebSphere **prima** di distribuire l'EAR.
 |---|---|
 | Tipo provider | Definito dall'utente |
 | Classe di implementazione | `org.postgresql.ds.PGConnectionPoolDataSource` |
-| Classpath | `/opt/jdbc/postgresql-42.7.3.jar` |
+| Classpath predefinito | `/opt/jdbc/postgresql-42.7.13.jar` |
 | Nome | `PostgreSQL JDBC Driver` |
 
 ### 2. DataSource
@@ -555,7 +610,56 @@ Queste risorse devono essere create in WebSphere **prima** di distribuire l'EAR.
 
 ## Deploy su WebSphere (wsadmin)
 
-> **Attenzione:** non eseguire mai un aggiornamento/reinstallazione sopra un'installazione esistente. Usare sempre la sequenza **disinstalla → installa** per evitare che il config repository di WebSphere mantenga file di moduli obsoleti che causano `NoModuleFileException`.
+L'installer è idempotente: usa `AdminApp.install` se `PaskinoMercato` non esiste e
+`AdminApp.update` se è già installata. In entrambi i casi passa i mapping EJB prima
+della validazione WebSphere. Non è necessario disinstallare per un normale aggiornamento.
+
+### Copia degli artefatti
+
+Copiare sul sistema dove viene eseguito `wsadmin` sia l'EAR appena compilato sia
+lo script della stessa revisione:
+
+```bash
+scp paskinomercato-ear/target/paskinomercato-ear-1.0.0.ear \
+    brian@lovecraft:/opt/deploy/
+scp scripts/wsadmin/install_paskinomercato.py \
+    brian@lovecraft:/opt/deploy/
+
+# Sul server: l'hash deve coincidere con quello calcolato dopo il build
+sha256sum /opt/deploy/paskinomercato-ear-1.0.0.ear
+```
+
+### Configurazione tramite variabili d'ambiente
+
+Tutti i valori possono essere modificati direttamente nella sezione `USER
+CONFIGURATION` oppure sovrascritti tramite variabili d'ambiente. L'uso delle
+variabili è consigliato soprattutto per le password.
+
+| Variabile | Predefinito | Scopo |
+|---|---|---|
+| `PASKINO_EAR_PATH` | `/opt/deploy/paskinomercato-ear-1.0.0.ear` | EAR letto da `wsadmin` |
+| `PASKINO_NODE_NAME` | `paskinoNode1` | Nodo WebSphere |
+| `PASKINO_SERVER_NAME` | `brian1` | Application server |
+| `PASKINO_POSTGRES_JAR` | `/opt/jdbc/postgresql-42.7.13.jar` | Driver visibile alla JVM target |
+| `PASKINO_DB_HOST` | `localhost` | Host PostgreSQL |
+| `PASKINO_DB_PORT` | `5432` | Porta PostgreSQL |
+| `PASKINO_DB_NAME` | `mercatodb` | Database |
+| `PASKINO_DB_USER` | `mercato` | Utente database |
+| `PASKINO_DB_PASSWORD` | `changeme` | Password database |
+| `PASKINO_MAIL_HOST` | `smtp.paskinomercato.it` | Server SMTP |
+| `PASKINO_MAIL_PORT` | `587` | Porta SMTP |
+| `PASKINO_MAIL_USER` | `noreply@paskinomercato.it` | Utente SMTP |
+| `PASKINO_MAIL_PASSWORD` | `changeme` | Password SMTP |
+
+Esempio:
+
+```bash
+export PASKINO_EAR_PATH=/opt/deploy/paskinomercato-ear-1.0.0.ear
+export PASKINO_NODE_NAME=paskinoNode1
+export PASKINO_SERVER_NAME=brian1
+export PASKINO_DB_PASSWORD='password-database'
+export PASKINO_MAIL_PASSWORD='password-smtp'
+```
 
 ### Installazione automatizzata
 
@@ -567,44 +671,65 @@ $WAS_HOME/bin/wsadmin.sh \
   -port 8879 \
   -user wasadmin \
   -password waspassword \
-  -f scripts/wsadmin/install_paskinomercato.py
+  -f /opt/deploy/install_paskinomercato.py
 ```
 
 Passi eseguiti automaticamente:
-1. Creazione JDBC Provider PostgreSQL
-2. Creazione DataSource `jdbc/MercatoDB` + alias J2C + pool di connessioni
-3. Creazione sessione JavaMail `mail/MercatoMail` con proprietà SMTP
-4. Installazione dell'EAR tramite `AdminApp.install`
-5. Mapping dei riferimenti alle risorse per i moduli EJB e WAR
-6. Salvataggio configurazione e sincronizzazione di tutti i nodi
-7. Avvio dell'applicazione
+
+1. Validazione di configurazione, target e contenuto dell'EAR.
+2. Creazione/aggiornamento del JDBC Provider PostgreSQL.
+3. Creazione/aggiornamento di alias J2C, DataSource `jdbc/MercatoDB` e pool.
+4. Creazione/aggiornamento della sessione `mail/MercatoMail`.
+5. Installazione o aggiornamento dell'EAR.
+6. Mapping esplicito dei quattro riferimenti EJB 2.1 tramite `MapEJBRefToEJB`.
+7. Mapping dei moduli, virtual host e context root.
+8. Salvataggio, sincronizzazione del nodo e avvio dell'applicazione.
+
+I quattro riferimenti locali vengono risolti sotto `java:comp/env/ejb/*` e
+puntano alle home locali nel namespace JVM-scoped `ejblocal:`. Non sostituire
+questi target con i nomi globali `ejb/...`: le interfacce EJB locali non sono
+pubblicate nel namespace globale del server.
 
 ### Disinstallazione
 
-```bash
-$WAS_HOME/bin/wsadmin.sh -lang jython \
-  -f scripts/wsadmin/uninstall_paskinomercato.py
-```
+Usare la disinstallazione solo per una rimozione completa o se si desidera
+ripartire deliberatamente da una configurazione applicativa vuota:
 
-### Reinstallazione manuale
+La disinstallazione può essere eseguita manualmente dalla WAS Admin Console oppure tramite wsadmin:
 
 ```bash
-# In wsadmin (jython):
-AdminApp.uninstall('PaskinoMercato')
-AdminConfig.save()
-# Verificare che la directory sia rimossa:
-# $WAS_HOME/profiles/<profile>/config/cells/<cell>/applications/PaskinoMercato.ear/
-
-AdminApp.install('/path/to/paskinomercato-ear-1.0.0.ear',
-    ['-appname', 'PaskinoMercato', '-usedefaultbindings', '-contextroot', '/paskinomercato'])
-AdminConfig.save()
+$WAS_HOME/bin/wsadmin.sh -lang jython -conntype SOAP \
+  -host localhost -port 8879 -user wasadmin -password waspassword \
+  -c "AdminApp.uninstall('PaskinoMercato'); AdminConfig.save()"
 ```
+
+### Diagnostica deploy
+
+Se `AdminApp` restituisce `ADMA0007E` o `WASX7109E`, lo script stampa
+automaticamente le righe di `taskInfo` per `MapEJBRefToEJB` e
+`MapResRefToEJB`, quindi annulla tutte le modifiche non salvate.
+
+Controllare nell'ordine:
+
+1. Che l'output mostri `Script revision: 1.2.0`.
+2. Che `PASKINO_EAR_PATH` punti all'EAR appena compilato e copiato.
+3. Che l'hash SHA-256 sul server coincida con quello del build.
+4. Che modulo e URI siano `PaskinoMercato EJB Module` e
+   `paskinomercato-ejb.jar,META-INF/ejb-jar.xml`.
+5. Che i target dei riferimenti EJB inizino con `ejblocal:`.
+
+Il messaggio `[WARNING] Unsaved configuration changes were discarded` indica
+che `AdminConfig.reset()` ha ripristinato la sessione dopo il fallimento; è
+quindi possibile correggere configurazione o artefatto e rieseguire lo script.
 
 ### Verifica Salute
 
+Verificare lo stato dell'applicazione dalla WAS Admin Console oppure tramite wsadmin:
+
 ```bash
-$WAS_HOME/bin/wsadmin.sh -lang jython \
-  -f scripts/wsadmin/check_paskinomercato.py
+$WAS_HOME/bin/wsadmin.sh -lang jython -conntype SOAP \
+  -host localhost -port 8879 -user wasadmin -password waspassword \
+  -c "print AdminApp.list()"
 ```
 
 Verifica: stato STARTED dell'applicazione, test connessione DataSource, presenza sessione mail, deploy modulo EJB.
@@ -631,9 +756,7 @@ Verifica: stato STARTED dell'applicazione, test connessione DataSource, presenza
 
 | Script | Linguaggio | Scopo |
 |---|---|---|
-| [`scripts/wsadmin/install_paskinomercato.py`](scripts/wsadmin/install_paskinomercato.py) | Jython | Installazione WAS completa: JDBC, mail, deploy EAR, avvio |
-| [`scripts/wsadmin/uninstall_paskinomercato.py`](scripts/wsadmin/uninstall_paskinomercato.py) | Jython | Disinstallazione WAS completa: stop, undeploy, rimozione risorse |
-| [`scripts/wsadmin/check_paskinomercato.py`](scripts/wsadmin/check_paskinomercato.py) | Jython | Verifica salute: stato app, connessione DB, sessione mail |
+| [`scripts/wsadmin/install_paskinomercato.py`](scripts/wsadmin/install_paskinomercato.py) | Jython | Install/update WAS 8.5.5: preflight EAR, JDBC, mail, mapping EJB 2.1, deploy e avvio |
 | [`scripts/tools/generate_placeholder_images.py`](scripts/tools/generate_placeholder_images.py) | Python 3 | Rigenera le 150 immagini SVG placeholder prodotti |
 | [`scripts/tools/LoadProducts.java`](scripts/tools/LoadProducts.java) | Java | Caricatore JDBC standalone per `seed_products.sql` |
 
