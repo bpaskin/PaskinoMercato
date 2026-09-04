@@ -1,14 +1,14 @@
 # PaskinoMercato 🛒
 
-**Supermercato Online Italiano** — Applicazione di riferimento per un supermercato online italiano, implementata in tre varianti distinte della piattaforma Java che illustrano l'evoluzione della tecnologia enterprise attraverso le generazioni.
+**Supermercato Online Italiano** — Applicazione di riferimento per un supermercato online italiano, implementata in **quattro varianti** distinte della piattaforma Java che illustrano l'evoluzione della tecnologia enterprise attraverso le generazioni.
 
-La stessa logica di business — vetrina bilingue (🇮🇹 / 🇬🇧), consegna solo in Italia, prezzi in Euro, catalogo di massimo **1.503 prodotti**, backend PostgreSQL — è fornita in tre implementazioni autonome: JDBC + EJB 2.1 su WebSphere, JPA 2.1 su Open Liberty e `JdbcTemplate` su Spring Boot.
+La stessa logica di business — vetrina bilingue (🇮🇹 / 🇬🇧), consegna solo in Italia, prezzi in Euro, catalogo di massimo **1.503 prodotti**, backend PostgreSQL — è fornita in quattro implementazioni autonome: due varianti WebSphere (standard e avanzata con maggiori dipendenze WAS proprietarie), JPA 2.1 su Open Liberty e `JdbcTemplate` su Spring Boot.
 
 ---
 
 ## Indice
 
-1. [Le Tre Varianti](#le-tre-varianti)
+1. [Le Quattro Varianti](#le-quattro-varianti)
 2. [Funzionalità dell'Applicazione](#funzionalità-dellapplicazione)
 3. [Struttura del Repository](#struttura-del-repository)
 4. [Architettura Generale](#architettura-generale)
@@ -16,21 +16,25 @@ La stessa logica di business — vetrina bilingue (🇮🇹 / 🇬🇧), consegn
 6. [Database Condiviso](#database-condiviso)
 7. [Confronto Tecnologico](#confronto-tecnologico)
 8. [Percorso di Modernizzazione](#percorso-di-modernizzazione)
-9. [Prerequisiti](#prerequisiti)
-10. [Avvio Rapido](#avvio-rapido)
-11. [Documentazione Dettagliata](#documentazione-dettagliata)
+9. [WebSphere V2 — Dipendenze Proprietarie e Problemi di Migrazione](#websphere-v2--dipendenze-proprietarie-e-problemi-di-migrazione)
+10. [Prerequisiti](#prerequisiti)
+11. [Avvio Rapido](#avvio-rapido)
+12. [Documentazione Dettagliata](#documentazione-dettagliata)
 
 ---
 
-## Le Tre Varianti
+## Le Quattro Varianti
 
 | Directory | Piattaforma | Java | Persistenza | Web Service | Porta |
 |---|---|---|---|---|---|
 | [`PaskinoMercato-WebSphere/`](PaskinoMercato-WebSphere/) | IBM WebSphere Application Server 8.5.5 | Java 8 | JDBC diretto | JAX-RPC 1.1 (SOAP) | 9080 |
+| [`PaskinoMercato-WebSphere-v2/`](PaskinoMercato-WebSphere-v2/) | IBM WebSphere Application Server 8.5.5 | Java 8 | JDBC diretto + API WAS proprietarie | JAX-RPC 1.1 (SOAP) | 9080 |
 | [`PaskinoMercato-Liberty/`](PaskinoMercato-Liberty/) | Open Liberty 26 | Java 11 | JPA 2.1 (EclipseLink) | — | 9080 |
 | [`PaskinoMercato-SpringBoot/`](PaskinoMercato-SpringBoot/) | Spring Boot 4.1 / Tomcat 11 embedded | Java 25 | JdbcTemplate | — | 8080 |
 
 Ogni directory è un progetto Maven autonomo con il proprio `README.md`, istruzioni di build e guida al deploy.
+
+> **Nota:** `PaskinoMercato-WebSphere-v2` è una variante intenzionalmente più complessa di `PaskinoMercato-WebSphere`. Introduce dipendenze dirette sulle API proprietarie IBM WebSphere (`was_public.jar`) e pattern architetturali che aumentano significativamente il costo di migrazione verso Liberty. È pensata come punto di partenza realistico per esercizi di modernizzazione più impegnativi.
 
 ---
 
@@ -63,6 +67,15 @@ PaskinoMercato/
 │   ├── paskinomercato-war/              ← Servlet 2.5 + JSP 2.1 + JAX-RPC
 │   ├── paskinomercato-ear/              ← Packaging EAR
 │   ├── scripts/wsadmin/                 ← Installer wsadmin automatizzato (Jython)
+│   ├── WEBSPHERE_SETUP.md               ← Guida alla configurazione risorse WAS
+│   └── README.md
+│
+├── PaskinoMercato-WebSphere-v2/         ← JavaEE 5 / EJB 2.1 / WAS 8.5.5 + API WAS proprietarie
+│   ├── paskinomercato-ejb/              ← Session Bean EJB 2.1 + Entity Bean BMP
+│   ├── paskinomercato-war/              ← Servlet 2.5 + JSP 2.1 + JAX-RPC + ServerNameFilter (WAS API)
+│   ├── paskinomercato-ear/              ← Packaging EAR
+│   ├── scripts/wsadmin/                 ← Installer wsadmin automatizzato (Jython)
+│   ├── was_public.jar                   ← JAR API WAS locale (vedere sezione dedicata)
 │   ├── WEBSPHERE_SETUP.md               ← Guida alla configurazione risorse WAS
 │   └── README.md
 │
@@ -189,19 +202,109 @@ psql -U mercato -d mercatodb \
 
 ## Confronto Tecnologico
 
-| Aspetto | WebSphere 8.5.5 | Open Liberty 26 | Spring Boot 4.1 |
-|---|---|---|---|
-| **Java** | 8 | 11 | 25 |
-| **Standard** | JavaEE 5 | Jakarta EE (CDI 1.2 + JPA 2.1) | Spring Framework 7 |
-| **Servizi** | EJB 2.1 — solo descriptor XML | CDI `@ApplicationScoped` + JTA | Spring `@Service` + `@Transactional` |
-| **Persistenza** | JDBC diretto via JNDI `DataSource` | **JPA 2.1** (EclipseLink) — `EntityManager` | `JdbcTemplate` via HikariCP |
-| **Carrello** | EJB Stateful + tabella DB | POJO in `HttpSession` | `@SessionScope` Spring bean |
-| **Transazioni** | CMT (Container-Managed) | JTA `@Transactional` | Spring `@Transactional` |
-| **Web layer** | JSP 2.1 + JSTL 1.2 + EL 2.2 | JSP 2.3 + JSTL 1.2 + EL 3.0 | JSP 3 + JSTL 3 + EL 6 |
-| **Web service** | JAX-RPC 1.1 (document/literal) | — | — |
-| **Deploy** | EAR — script wsadmin Jython | EAR — Liberty Maven plugin | WAR eseguibile `java -jar` |
-| **Configurazione** | Admin Console / wsadmin | `server.xml` + `bootstrap.properties` | `application.properties` |
-| **Email** | JavaMail via JNDI | Jakarta Mail via JNDI | Spring Mail (`JavaMailSender`) |
+| Aspetto | WebSphere 8.5.5 | WebSphere 8.5.5 v2 | Open Liberty 26 | Spring Boot 4.1 |
+|---|---|---|---|---|
+| **Java** | 8 | 8 | 11 | 25 |
+| **Standard** | JavaEE 5 | JavaEE 5 + API WAS proprietarie | Jakarta EE (CDI 1.2 + JPA 2.1) | Spring Framework 7 |
+| **Servizi** | EJB 2.1 — solo descriptor XML | EJB 2.1 + `com.ibm.websphere.*` API | CDI `@ApplicationScoped` + JTA | Spring `@Service` + `@Transactional` |
+| **Persistenza** | JDBC diretto via JNDI `DataSource` | JDBC diretto via JNDI `DataSource` | **JPA 2.1** (EclipseLink) — `EntityManager` | `JdbcTemplate` via HikariCP |
+| **Carrello** | EJB Stateful + tabella DB | EJB Stateful + tabella DB | POJO in `HttpSession` | `@SessionScope` Spring bean |
+| **Transazioni** | CMT (Container-Managed) | CMT (Container-Managed) | JTA `@Transactional` | Spring `@Transactional` |
+| **Web layer** | JSP 2.1 + JSTL 1.2 + EL 2.2 | JSP 2.1 + JSTL 1.2 + EL 2.2 | JSP 2.3 + JSTL 1.2 + EL 3.0 | JSP 3 + JSTL 3 + EL 6 |
+| **Web service** | JAX-RPC 1.1 (document/literal) | JAX-RPC 1.1 (document/literal) | — | — |
+| **Deploy** | EAR — script wsadmin Jython | EAR — script wsadmin Jython | EAR — Liberty Maven plugin | WAR eseguibile `java -jar` |
+| **Configurazione** | Admin Console / wsadmin | Admin Console / wsadmin | `server.xml` + `bootstrap.properties` | `application.properties` |
+| **Email** | JavaMail via JNDI | JavaMail via JNDI | Jakarta Mail via JNDI | Spring Mail (`JavaMailSender`) |
+| **Dipendenze proprietarie** | Nessuna | **`was_public.jar`** (`com.ibm.websphere.appserver`) | Nessuna | Nessuna |
+
+---
+
+## WebSphere V2 — Dipendenze Proprietarie e Problemi di Migrazione
+
+`PaskinoMercato-WebSphere-v2` introduce l'uso diretto delle **API proprietarie IBM WebSphere** tramite il JAR `was_public.jar`. Questo è il pattern più comune nelle applicazioni WAS reali e il principale ostacolo alla migrazione verso Liberty o qualsiasi altro runtime.
+
+### Il JAR `was_public.jar` nel `pom.xml`
+
+Il `pom.xml` radice del progetto v2 dichiara la dipendenza con `scope: system`, il che significa che Maven non la scarica da Maven Central — deve essere presente localmente nel percorso indicato:
+
+```xml
+<!-- pom.xml — radice del progetto -->
+<properties>
+    <!-- Percorso al JAR WAS locale: risolve a PaskinoMercato-WebSphere-v2/was_public.jar -->
+    <was.public.jar>${project.basedir}/was_public.jar</was.public.jar>
+</properties>
+
+<dependencyManagement>
+    <dependencies>
+        <!-- WAS Public API (local JAR provided in the project root) -->
+        <dependency>
+            <groupId>com.ibm.websphere.appserver</groupId>
+            <artifactId>was-public</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${was.public.jar}</systemPath>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+```
+
+La proprietà `was.public.jar` viene poi **sovrascritta** in [`paskinomercato-war/pom.xml`](PaskinoMercato-WebSphere-v2/paskinomercato-war/pom.xml) per correggere il percorso relativo dal sottomodulo:
+
+```xml
+<!-- paskinomercato-war/pom.xml -->
+<properties>
+    <!-- Un livello sopra rispetto al modulo WAR = directory radice del progetto -->
+    <was.public.jar>${project.basedir}/../was_public.jar</was.public.jar>
+</properties>
+```
+
+> **Attenzione:** `scope: system` è **deprecato in Maven** e intrinsecamente fragile — il percorso deve essere corretto su ogni macchina che esegue la build. Se il file `was_public.jar` non si trova nella posizione attesa, la build fallirà con un errore simile a:
+> ```
+> [ERROR] 'dependencies.dependency.systemPath' for com.ibm.websphere.appserver:was-public:jar
+>         must point to an existing file but could not find: /path/to/was_public.jar
+> ```
+
+#### Correggere il percorso per la propria installazione WAS
+
+Il JAR si trova nell'installazione WebSphere Application Server locale:
+
+| Sistema Operativo | Percorso tipico |
+|---|---|
+| Linux / macOS | `/opt/IBM/WebSphere/AppServer/dev/was_public.jar` |
+| Windows | `C:\IBM\WebSphere\AppServer\dev\was_public.jar` |
+
+Per puntare al JAR dell'installazione WAS locale invece del file nel repository, modificare la proprietà nel `pom.xml` radice:
+
+```xml
+<!-- Opzione A: percorso assoluto all'installazione WAS locale -->
+<was.public.jar>/opt/IBM/WebSphere/AppServer/dev/was_public.jar</was.public.jar>
+
+<!-- Opzione B: installare il JAR nel repository Maven locale e usare scope: provided -->
+<!-- mvn install:install-file \
+       -Dfile=/opt/IBM/WebSphere/AppServer/dev/was_public.jar \
+       -DgroupId=com.ibm.websphere.appserver \
+       -DartifactId=was-public \
+       -Dversion=8.5.5 \
+       -Dpackaging=jar
+-->
+```
+
+Se si sceglie l'opzione B (installazione nel repository Maven locale), rimuovere `<scope>system</scope>` e `<systemPath>` dalla dipendenza nel `pom.xml` radice e cambiare la versione in `8.5.5`.
+
+---
+
+### Perché V2 è più difficile da migrare a Liberty
+
+Rispetto a `PaskinoMercato-WebSphere`, la variante v2 aggiunge i seguenti ostacoli alla migrazione:
+
+| Problema | Dettaglio | Impatto su Liberty |
+|---|---|---|
+| **`com.ibm.websphere.appserver.*` API** | Le classi del package `com.ibm.websphere` sono fornite solo da WAS; Liberty non le espone (a meno di feature specifiche) | Le classi che le importano non compilano su Liberty senza sostituzione |
+| **`scope: system` JAR** | Il `pom.xml` usa `systemPath` per localizzare `was_public.jar` — non è un artefatto Maven standard | Il build pipeline di Liberty non conosce questo JAR; bisogna rimuovere la dipendenza o sostituirla |
+| **`ServerNameFilter`** | Filtro Servlet che legge metadati del server WAS tramite API proprietarie (`com.ibm.websphere.runtime.ServerName`) | Su Liberty tale API non esiste; il filtro deve essere riscritto o eliminato |
+| **Binding descriptor WAS** (`ibm-ejb-jar-bnd.xmi`, `ibm-application-bnd.xmi`) | File di configurazione IBM-specifici che controllano JNDI binding, sicurezza e pool | Non supportati su Liberty; vanno convertiti in `ibm-ejb-jar-bnd.xml` (formato Liberty) o rimossi |
+| **JAX-RPC 1.1** | JAX-RPC è rimosso da Liberty (sostituito da JAX-WS 2.x / JAX-RS) | Il web service deve essere riscritto usando JAX-WS o REST |
+| **EJB 2.1 Entity Bean BMP** | Liberty supporta EJB 3.x; gli Entity Bean 2.x in BMP (Bean-Managed Persistence) non sono supportati | Tutti gli Entity Bean vanno convertiti in entità JPA |
 
 ---
 
@@ -219,6 +322,18 @@ JAX-RPC 1.1 SOAP            (SOAP rimosso)                 (SOAP rimosso)
 Descriptor XML              beans.xml minimale             Annotazioni pure
 Stateful EJB cart           POJO in HttpSession            @SessionScope bean
 ```
+
+### Cambiamenti chiave WebSphere V2 → Liberty (percorso più impegnativo)
+
+| Da | A |
+|---|---|
+| `com.ibm.websphere.runtime.ServerName` (API proprietaria) | Rimosso o sostituito con `java.lang.management.ManagementFactory` |
+| `was_public.jar` (`scope: system`) | Dipendenza rimossa — Liberty non richiede questo JAR |
+| `ServerNameFilter` (filtra su API WAS) | Riscrivere senza dipendenze WAS o eliminare |
+| `ibm-ejb-jar-bnd.xmi` (binding WAS legacy) | Convertire in `ibm-ejb-jar-bnd.xml` (formato Liberty) |
+| `ibm-application-bnd.xmi` (binding WAS legacy) | Convertire in `ibm-application-bnd.xml` (formato Liberty) |
+| JAX-RPC 1.1 web service | Riscrivere come JAX-WS 2.x o endpoint REST |
+| Entity Bean BMP 2.1 | Convertire in entità JPA `@Entity` |
 
 ### Cambiamenti chiave WebSphere → Liberty
 
@@ -296,6 +411,16 @@ mvn clean package
 # Deploy tramite wsadmin — vedere WEBSPHERE_SETUP.md
 ```
 
+### 5. WebSphere V2 (richiede WAS 8.5.5 + `was_public.jar`)
+
+Prima di eseguire la build, assicurarsi che il file `was_public.jar` sia presente in `PaskinoMercato-WebSphere-v2/` oppure aggiornare la proprietà `was.public.jar` nel [`pom.xml`](PaskinoMercato-WebSphere-v2/pom.xml) con il percorso dell'installazione WAS locale (tipicamente `/opt/IBM/WebSphere/AppServer/dev/was_public.jar`).
+
+```bash
+cd PaskinoMercato-WebSphere-v2
+mvn clean package
+# Deploy tramite wsadmin — vedere WEBSPHERE_SETUP.md
+```
+
 ---
 
 ## Documentazione Dettagliata
@@ -304,6 +429,8 @@ mvn clean package
 |---|---|---|
 | WebSphere | [`PaskinoMercato-WebSphere/README.md`](PaskinoMercato-WebSphere/README.md) | Stack, architettura EJB 2.1, Entity Bean BMP, JAX-RPC, deploy wsadmin |
 | WebSphere | [`PaskinoMercato-WebSphere/WEBSPHERE_SETUP.md`](PaskinoMercato-WebSphere/WEBSPHERE_SETUP.md) | Configurazione JDBC provider, DataSource, sessione JavaMail su WAS |
+| WebSphere V2 | [`PaskinoMercato-WebSphere-v2/README.md`](PaskinoMercato-WebSphere-v2/README.md) | Stack EJB 2.1, API WAS proprietarie, `was_public.jar`, deploy wsadmin |
+| WebSphere V2 | [`PaskinoMercato-WebSphere-v2/WEBSPHERE_SETUP.md`](PaskinoMercato-WebSphere-v2/WEBSPHERE_SETUP.md) | Configurazione JDBC provider, DataSource, sessione JavaMail su WAS |
 | Liberty | [`PaskinoMercato-Liberty/README.md`](PaskinoMercato-Liberty/README.md) | Stack CDI + JPA, persistence unit, bean di servizio, Liberty server.xml |
 | Spring Boot | [`PaskinoMercato-SpringBoot/README.md`](PaskinoMercato-SpringBoot/README.md) | Stack Spring, controller, servizi, configurazione application.properties |
 
