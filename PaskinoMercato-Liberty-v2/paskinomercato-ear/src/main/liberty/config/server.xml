@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<server description="PaskinoMercato Liberty Server">
+
+    <featureManager>
+        <feature>jsp-2.3</feature>
+        <feature>ejbLite-3.2</feature>
+        <feature>servlet-3.1</feature>
+        <feature>ejbHome-3.2</feature>
+        <feature>jndi-1.0</feature>
+        <feature>jdbc-4.1</feature>
+        <feature>javaMail-1.5</feature>
+        <feature>jaxws-2.2</feature>
+    </featureManager>
+
+    <applicationManager autoExpand="true"/>
+
+    <!-- Bind only to localhost for security -->
+    <httpEndpoint host="${httpEndpoint_host_1}"
+                  httpPort="${httpEndpoint_port_1}"
+                  httpsPort="${httpEndpoint_secure_port_1}"
+                  id="defaultHttpEndpoint">
+        <tcpOptions maxOpenConnections="20000"/>
+    </httpEndpoint>
+
+    <!-- PostgreSQL driver and any extra libs -->
+    <library id="WasExtLib">
+        <file name="/tmp/postgresql-42.7.13.jar"/>
+    </library>
+
+    <enterpriseApplication id="PaskinoMercato.ear"
+                           location="paskinomercato-ear-1.0.0.ear"
+                           name="PaskinoMercato">
+        <web-ext context-root="/paskinomercato"
+                 id="PaskinoMercato.ear_web-ext_paskinomercato"
+                 moduleName="paskinomercato"/>
+        <classloader commonLibraryRef="WasExtLib"/>
+    </enterpriseApplication>
+
+    <authData id="MercatoDBAlias"
+              password="${MercatoDBAlias_password}"
+              user="${MercatoDBAlias_user}"/>
+
+    <mailSession description="JavaMail session for PaskinoMercato"
+                 from="bpaskin@us.ibm.com"
+                 host="na.relay.ibm.com"
+                 jndiName="mail/MercatoMail"
+                 mailSessionID="PaskinoMercato Mail"
+                 password="${PaskinoMercato_Mail_MailSession_password}"
+                 transportProtocol="smtp"
+                 user="bpaskin@us.ibm.com">
+        <property name="mail.smtp.auth" value="true"/>
+        <property name="mail.smtp.starttls.enable" value="true"/>
+        <property name="mail.smtp.ssl.trust" value="*"/>
+        <property name="mail.transport.protocol" value="smtp"/>
+        <property name="mail.debug" value="false"/>
+    </mailSession>
+
+    <jdbcDriver id="PostgreSQLDriver"
+                javax.sql.ConnectionPoolDataSource="org.postgresql.ds.PGConnectionPoolDataSource"
+                libraryRef="WasExtLib"/>
+
+    <dataSource containerAuthDataRef="MercatoDBAlias"
+                id="MercatoDB"
+                jdbcDriverRef="PostgreSQLDriver"
+                jndiName="jdbc/MercatoDB"
+                type="javax.sql.ConnectionPoolDataSource">
+        <properties databaseName="${db_databaseName}"
+                    portNumber="${db_portNumber}"
+                    serverName="${db_serverName}"
+                    ssl="false"/>
+        <connectionManager connectionTimeout="180"
+                           enableContainerAuthForDirectLookups="true"
+                           maxPoolSize="20"
+                           minPoolSize="2"/>
+    </dataSource>
+
+    <transaction propogatedOrBMTTranLifetimeTimeout="300"/>
+    <logging traceFileName="trace.log" traceFormat="BASIC" traceSpecification="*=info"/>
+
+    <!-- Environment variables — override via server.env or bootstrap.properties -->
+    <!-- Security: bind only to localhost, not 0.0.0.0 -->
+    <variable defaultValue="localhost" name="httpEndpoint_host_1"/>
+    <variable defaultValue="9084"      name="httpEndpoint_port_1"/>
+    <variable defaultValue="9447"      name="httpEndpoint_secure_port_1"/>
+
+    <!-- DataSource connection variables -->
+    <variable defaultValue="mercatodb"  name="db_databaseName"/>
+    <variable defaultValue="5432"       name="db_portNumber"/>
+    <variable defaultValue="localhost"  name="db_serverName"/>
+
+    <!-- Sensitive credentials — set in server.env, not here -->
+    <variable defaultValue="" name="MercatoDBAlias_password"/>
+    <variable defaultValue="" name="MercatoDBAlias_user"/>
+    <variable defaultValue="" name="PaskinoMercato_Mail_MailSession_password"/>
+
+</server>

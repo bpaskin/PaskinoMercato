@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+                 http://xmlns.jcp.org/xml/ns/persistence/persistence_2_2.xsd"
+             version="2.2">
+
+    <persistence-unit name="MercatoDB" transaction-type="JTA">
+
+        <!-- JTA data source bound in Liberty server.xml as jdbc/MercatoDB -->
+        <jta-data-source>jdbc/MercatoDB</jta-data-source>
+
+        <class>it.paskinomercato.model.Prodotto</class>
+        <class>it.paskinomercato.model.Categoria</class>
+        <class>it.paskinomercato.model.Cliente</class>
+        <class>it.paskinomercato.model.Ordine</class>
+
+        <exclude-unlisted-classes>true</exclude-unlisted-classes>
+
+        <properties>
+            <!-- EclipseLink (Liberty default JPA provider) -->
+            <property name="eclipselink.target-database" value="PostgreSQL"/>
+            <property name="eclipselink.logging.level" value="WARNING"/>
+        </properties>
+
+    </persistence-unit>
+
+</persistence>

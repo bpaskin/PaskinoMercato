@@ -1,0 +1,107 @@
+package it.paskinomercato.model;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import java.io.Serializable;
+import java.math.BigDecimal;
+
+/**
+ * JPA entity for mercato.prodotto.
+ */
+@Entity
+@Table(name = "prodotto", schema = "mercato")
+public class Prodotto implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    @Column(name = "codice")
+    private String codice;
+
+    @Column(name = "nome_it")
+    private String nomeIt;
+
+    @Column(name = "nome_en")
+    private String nomeEn;
+
+    @Column(name = "descrizione_it")
+    private String descrizioneIt;
+
+    @Column(name = "descrizione_en")
+    private String descrizioneEn;
+
+    @Column(name = "prezzo")
+    private BigDecimal prezzo;
+
+    @Column(name = "unita_misura")
+    private String unitaMisura;
+
+    @Column(name = "quantita_stock")
+    private int quantitaStock;
+
+    @Column(name = "categoria_id")
+    private int categoriaId;
+
+    @Column(name = "immagine")
+    private String immagine;
+
+    @Column(name = "attivo")
+    private boolean attivo;
+
+    @Column(name = "peso_kg")
+    private double pesoKg;
+
+    public int getId()                        { return id; }
+    public void setId(int id)                 { this.id = id; }
+
+    public String getCodice()                 { return codice; }
+    public void setCodice(String codice)      { this.codice = codice; }
+
+    public String getNomeIt()                 { return nomeIt; }
+    public void setNomeIt(String nomeIt)      { this.nomeIt = nomeIt; }
+
+    public String getNomeEn()                 { return nomeEn; }
+    public void setNomeEn(String nomeEn)      { this.nomeEn = nomeEn; }
+
+    public String getDescrizioneIt()          { return descrizioneIt; }
+    public void setDescrizioneIt(String d)    { this.descrizioneIt = d; }
+
+    public String getDescrizioneEn()          { return descrizioneEn; }
+    public void setDescrizioneEn(String d)    { this.descrizioneEn = d; }
+
+    public BigDecimal getPrezzo()             { return prezzo; }
+    public void setPrezzo(BigDecimal prezzo)  { this.prezzo = prezzo; }
+
+    public String getUnitaMisura()            { return unitaMisura; }
+    public void setUnitaMisura(String u)      { this.unitaMisura = u; }
+
+    public int getQuantitaStock()             { return quantitaStock; }
+    public void setQuantitaStock(int q)       { this.quantitaStock = q; }
+
+    public int getCategoriaId()               { return categoriaId; }
+    public void setCategoriaId(int c)         { this.categoriaId = c; }
+
+    public String getImmagine()               { return immagine; }
+    public void setImmagine(String immagine)  { this.immagine = immagine; }
+
+    public boolean isAttivo()                 { return attivo; }
+    public void setAttivo(boolean attivo)     { this.attivo = attivo; }
+
+    public double getPesoKg()                 { return pesoKg; }
+    public void setPesoKg(double pesoKg)      { this.pesoKg = pesoKg; }
+
+    public String getNome(String lang) {
+        return "en".equalsIgnoreCase(lang) ? nomeEn : nomeIt;
+    }
+
+    public String getDescrizione(String lang) {
+        return "en".equalsIgnoreCase(lang) ? descrizioneEn : descrizioneIt;
+    }
+}
