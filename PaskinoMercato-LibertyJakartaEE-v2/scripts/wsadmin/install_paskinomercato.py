@@ -636,10 +636,11 @@ def getEjbReferenceMappings():
     """Map EJB 2.1 local references to their target local interfaces.
 
     WebSphere's MapEJBRefToEJB task accepts exactly five fields per row:
-      [module-name, bean-name, module-uri, ejb-ref-name, target-local-interface]
+      [module-name, bean-name, module-uri, ejb-ref-name, target-interface]
 
-    The target-local-interface must be the EJBLocalObject interface, not the
-    LocalHome, and no ejblocal: JNDI URI should be included here.
+    The target interface must match the interface declared by the reference
+    in META-INF/ejb-jar.xml. These entity beans expose their local business
+    interfaces as *EntityService, and no ejblocal: JNDI URI is included here.
     """
     return [
         [
@@ -647,28 +648,28 @@ def getEjbReferenceMappings():
             "CatalogoBean",
             EJB_MODULE_URI,
             "ejb/ProdottoEntityBean",
-            "it.paskinomercato.ejb.entity.prodotto.ProdottoEntityLocal"
+            "it.paskinomercato.ejb.entity.prodotto.ProdottoEntityService"
         ],
         [
             EJB_MODULE_NAME,
             "CatalogoBean",
             EJB_MODULE_URI,
             "ejb/CategoriaEntityBean",
-            "it.paskinomercato.ejb.entity.categoria.CategoriaEntityLocal"
+            "it.paskinomercato.ejb.entity.categoria.CategoriaEntityService"
         ],
         [
             EJB_MODULE_NAME,
             "OrdineBean",
             EJB_MODULE_URI,
             "ejb/OrdineEntityBean",
-            "it.paskinomercato.ejb.entity.ordine.OrdineEntityLocal"
+            "it.paskinomercato.ejb.entity.ordine.OrdineEntityService"
         ],
         [
             EJB_MODULE_NAME,
             "ClienteBean",
             EJB_MODULE_URI,
             "ejb/ClienteEntityBean",
-            "it.paskinomercato.ejb.entity.cliente.ClienteEntityLocal"
+            "it.paskinomercato.ejb.entity.cliente.ClienteEntityService"
         ]
     ]
 
