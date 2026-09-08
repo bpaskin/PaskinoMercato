@@ -1,14 +1,14 @@
 # PaskinoMercato 🛒
 
-**Supermercato Online Italiano** — Applicazione di riferimento per un supermercato online italiano, implementata in **cinque varianti** distinte della piattaforma Java che illustrano l'evoluzione della tecnologia enterprise attraverso le generazioni.
+**Supermercato Online Italiano** — Applicazione di riferimento per un supermercato online italiano, implementata in **sei varianti** distinte della piattaforma Java che illustrano l'evoluzione della tecnologia enterprise attraverso le generazioni.
 
-La stessa logica di business — vetrina bilingue (🇮🇹 / 🇬🇧), consegna solo in Italia, prezzi in Euro, catalogo di massimo **1.503 prodotti**, backend PostgreSQL — è fornita in cinque implementazioni autonome: due varianti WebSphere (standard e avanzata con maggiori dipendenze WAS proprietarie), due varianti Open Liberty (JPA 2.1 e migrazione diretta da WebSphere-v2 con EJB 3.2 + JDBC) e `JdbcTemplate` su Spring Boot.
+La stessa logica di business — vetrina bilingue (🇮🇹 / 🇬🇧), consegna solo in Italia, prezzi in Euro, catalogo di massimo **1.503 prodotti**, backend PostgreSQL — è fornita in sei implementazioni autonome: due varianti WebSphere (standard e avanzata con maggiori dipendenze WAS proprietarie), tre varianti Open Liberty (JPA 2.1, migrazione diretta da WebSphere-v2 con EJB 3.2 + JDBC e Jakarta EE 10 con EJB Lite 4.0 + JDBC) e `JdbcTemplate` su Spring Boot.
 
 ---
 
 ## Indice
 
-1. [Le Cinque Varianti](#le-cinque-varianti)
+1. [Le Sei Varianti](#le-sei-varianti)
 2. [Funzionalità dell'Applicazione](#funzionalità-dellapplicazione)
 3. [Struttura del Repository](#struttura-del-repository)
 4. [Architettura Generale](#architettura-generale)
@@ -23,7 +23,7 @@ La stessa logica di business — vetrina bilingue (🇮🇹 / 🇬🇧), consegn
 
 ---
 
-## Le Cinque Varianti
+## Le Sei Varianti
 
 | Directory | Piattaforma | Java | Persistenza | Web Service | Porta |
 |---|---|---|---|---|---|
@@ -31,6 +31,7 @@ La stessa logica di business — vetrina bilingue (🇮🇹 / 🇬🇧), consegn
 | [`PaskinoMercato-WebSphere-v2/`](PaskinoMercato-WebSphere-v2/) | IBM WebSphere Application Server 8.5.5 | Java 8 | JDBC diretto + API WAS proprietarie | JAX-RPC 1.1 (SOAP) | 9080 |
 | [`PaskinoMercato-Liberty/`](PaskinoMercato-Liberty/) | Open Liberty 26 | Java 11 | JPA 2.1 (EclipseLink) | — | 9080 |
 | [`PaskinoMercato-Liberty-v2/`](PaskinoMercato-Liberty-v2/) | Open Liberty 26 | Java 8 (bytecode) / 21+ (runtime) | JDBC diretto via JNDI | JAX-WS 2.2 (SOAP) | 9080 |
+| [`PaskinoMercato-LibertyJakartaEE-v2/`](PaskinoMercato-LibertyJakartaEE-v2/) | Open Liberty 26.0.0.9 / Jakarta EE 10 | Java 22+ | JDBC diretto via JNDI | JAX-WS (SOAP) | 9084 |
 | [`PaskinoMercato-SpringBoot/`](PaskinoMercato-SpringBoot/) | Spring Boot 4.1 / Tomcat 11 embedded | Java 25 | JdbcTemplate | — | 8080 |
 
 Ogni directory è un progetto Maven autonomo con il proprio `README.md`, istruzioni di build e guida al deploy.
@@ -38,6 +39,8 @@ Ogni directory è un progetto Maven autonomo con il proprio `README.md`, istruzi
 > **Nota:** `PaskinoMercato-WebSphere-v2` è una variante intenzionalmente più complessa di `PaskinoMercato-WebSphere`. Introduce dipendenze dirette sulle API proprietarie IBM WebSphere (`was_public.jar`) e pattern architetturali che aumentano significativamente il costo di migrazione verso Liberty. È pensata come punto di partenza realistico per esercizi di modernizzazione più impegnativi.
 
 > **Nota:** `PaskinoMercato-Liberty-v2` è il risultato diretto della migrazione di `PaskinoMercato-WebSphere-v2` su Open Liberty. Mantiene lo stile JDBC diretto e gli EJB (aggiornati da 2.1 a 3.2), rimpiazza JAX-RPC con JAX-WS 2.2 ed elimina tutte le dipendenze sulle API proprietarie WAS. È il punto di partenza per confrontare l'impegno di migrazione rispetto alla variante Liberty standard (che usa JPA).
+
+> **Nota:** `PaskinoMercato-LibertyJakartaEE-v2` è la variante modernizzata su Open Liberty con Jakarta EE 10, Java 22+, EJB Lite 4.0, Servlet 6.0, Jakarta Pages 3.1 e Jakarta Mail 2.1. Mantiene la persistenza JDBC diretta e utilizza la porta HTTP 9084.
 
 ---
 
@@ -97,6 +100,14 @@ PaskinoMercato/
 │   ├── LIBERTY_SETUP.md                 ← Guida alla configurazione risorse Liberty
 │   └── README.md
 │
+├── PaskinoMercato-LibertyJakartaEE-v2/  ← Jakarta EE 10 / EJB Lite 4.0 / Open Liberty 26
+│   ├── paskinomercato-ejb/              ← Session Bean EJB Lite + JDBC diretto
+│   ├── paskinomercato-war/              ← Servlet 6.0 + Jakarta Pages 3.1 + JAX-WS
+│   ├── paskinomercato-ear/              ← Packaging EAR + server.xml Liberty
+│   ├── scripts/                         ← Script di supporto
+│   ├── LIBERTY_SETUP.md                 ← Guida alla configurazione risorse Liberty
+│   └── README.md
+│
 └── PaskinoMercato-SpringBoot/           ← Spring Boot 4.1 / Java 25
     ├── paskinomercato-spring/
     │   ├── src/main/java/               ← @Service + @Controller + @SessionScope
@@ -121,6 +132,7 @@ Browser
 │  WebSphere:    Servlet 2.5 + JSP 2.1 + JSTL 1.2                       │
 │  Liberty:      Servlet 3.1 + JSP 2.3 + JSTL 1.2 + EL 3.0             │
 │  Liberty-v2:   Servlet 3.1 + JSP 2.3 + JSTL 1.2 + EL 3.0             │
+│  Jakarta EE:   Servlet 6.0 + Jakarta Pages 3.1 + JSTL + EL           │
 │  Spring:       Spring MVC @Controller + JSP 3 + JSTL 3 + EL 6         │
 └─────────────────────────────────────────────────────────────────────────┘
   │
@@ -131,6 +143,7 @@ Browser
 │  WebSphere:    EJB 2.1 Session Bean Stateless + Entity Bean BMP        │
 │  Liberty:      CDI @ApplicationScoped + JTA @Transactional             │
 │  Liberty-v2:   EJB 3.2 Session Bean Stateless + CMT                   │
+│  Jakarta EE:   EJB Lite 4.0 Stateless/Stateful + CMT                 │
 │  Spring:       @Service + Spring @Transactional                        │
 └─────────────────────────────────────────────────────────────────────────┘
   │
@@ -141,6 +154,7 @@ Browser
 │  WebSphere:    JDBC diretto via JNDI DataSource                        │
 │  Liberty:      JPA 2.1 (EclipseLink) — EntityManager + JPQL           │
 │  Liberty-v2:   JDBC diretto via JNDI DataSource                        │
+│  Jakarta EE:   JDBC diretto via JNDI DataSource                        │
 │  Spring:       JdbcTemplate via HikariCP                               │
 └─────────────────────────────────────────────────────────────────────────┘
   │
@@ -217,20 +231,20 @@ psql -U mercato -d mercatodb \
 
 ## Confronto Tecnologico
 
-| Aspetto | WebSphere 8.5.5 | WebSphere 8.5.5 v2 | Open Liberty 26 | Open Liberty 26 v2 | Spring Boot 4.1 |
-|---|---|---|---|---|---|
-| **Java** | 8 | 8 | 11 | 8 (bytecode) / 21+ (runtime) | 25 |
-| **Standard** | JavaEE 5 | JavaEE 5 + API WAS proprietarie | Jakarta EE (CDI 1.2 + JPA 2.1) | Java EE 7 (EJB 3.2) | Spring Framework 7 |
-| **Servizi** | EJB 2.1 — solo descriptor XML | EJB 2.1 + `com.ibm.websphere.*` API | CDI `@ApplicationScoped` + JTA | EJB 3.2 `@Stateless` / `@Stateful` | Spring `@Service` + `@Transactional` |
-| **Persistenza** | JDBC diretto via JNDI `DataSource` | JDBC diretto via JNDI `DataSource` | **JPA 2.1** (EclipseLink) — `EntityManager` | JDBC diretto via JNDI `DataSource` | `JdbcTemplate` via HikariCP |
-| **Carrello** | EJB Stateful + tabella DB | EJB Stateful + tabella DB | POJO in `HttpSession` | EJB 3.2 Stateful + tabella DB | `@SessionScope` Spring bean |
-| **Transazioni** | CMT (Container-Managed) | CMT (Container-Managed) | JTA `@Transactional` | CMT (Container-Managed) | Spring `@Transactional` |
-| **Web layer** | JSP 2.1 + JSTL 1.2 + EL 2.2 | JSP 2.1 + JSTL 1.2 + EL 2.2 | JSP 2.3 + JSTL 1.2 + EL 3.0 | JSP 2.3 + JSTL 1.2 + EL 3.0 | JSP 3 + JSTL 3 + EL 6 |
-| **Web service** | JAX-RPC 1.1 (document/literal) | JAX-RPC 1.1 (document/literal) | — | **JAX-WS 2.2** (SOAP) | — |
-| **Deploy** | EAR — script wsadmin Jython | EAR — script wsadmin Jython | EAR — Liberty Maven plugin | EAR — Liberty Maven plugin | WAR eseguibile `java -jar` |
-| **Configurazione** | Admin Console / wsadmin | Admin Console / wsadmin | `server.xml` + `bootstrap.properties` | `server.xml` + `server.env` | `application.properties` |
-| **Email** | JavaMail via JNDI | JavaMail via JNDI | Jakarta Mail via JNDI | JavaMail 1.5 via JNDI | Spring Mail (`JavaMailSender`) |
-| **Dipendenze proprietarie** | Nessuna | **`was_public.jar`** (`com.ibm.websphere.appserver`) | Nessuna | Nessuna | Nessuna |
+| Aspetto | WebSphere 8.5.5 | WebSphere 8.5.5 v2 | Open Liberty 26 | Open Liberty 26 v2 | Jakarta EE 10 / Liberty 26 | Spring Boot 4.1 |
+|---|---|---|---|---|---|---|
+| **Java** | 8 | 8 | 11 | 8 (bytecode) / 21+ (runtime) | 22+ | 25 |
+| **Standard** | JavaEE 5 | JavaEE 5 + API WAS proprietarie | Jakarta EE (CDI 1.2 + JPA 2.1) | Java EE 7 (EJB 3.2) | Jakarta EE 10 (EJB Lite 4.0) | Spring Framework 7 |
+| **Servizi** | EJB 2.1 — solo descriptor XML | EJB 2.1 + `com.ibm.websphere.*` API | CDI `@ApplicationScoped` + JTA | EJB 3.2 `@Stateless` / `@Stateful` | EJB Lite 4.0 `@Stateless` / `@Stateful` | Spring `@Service` + `@Transactional` |
+| **Persistenza** | JDBC diretto via JNDI `DataSource` | JDBC diretto via JNDI `DataSource` | **JPA 2.1** (EclipseLink) — `EntityManager` | JDBC diretto via JNDI `DataSource` | JDBC diretto via JNDI `DataSource` | `JdbcTemplate` via HikariCP |
+| **Carrello** | EJB Stateful + tabella DB | EJB Stateful + tabella DB | POJO in `HttpSession` | EJB 3.2 Stateful + tabella DB | EJB Lite 4.0 Stateful + tabella DB | `@SessionScope` Spring bean |
+| **Transazioni** | CMT (Container-Managed) | CMT (Container-Managed) | JTA `@Transactional` | CMT (Container-Managed) | CMT (Container-Managed) | Spring `@Transactional` |
+| **Web layer** | JSP 2.1 + JSTL 1.2 + EL 2.2 | JSP 2.1 + JSTL 1.2 + EL 2.2 | JSP 2.3 + JSTL 1.2 + EL 3.0 | JSP 2.3 + JSTL 1.2 + EL 3.0 | Servlet 6.0 + Jakarta Pages 3.1 | JSP 3 + JSTL 3 + EL 6 |
+| **Web service** | JAX-RPC 1.1 (document/literal) | JAX-RPC 1.1 (document/literal) | — | **JAX-WS 2.2** (SOAP) | JAX-WS (SOAP) | — |
+| **Deploy** | EAR — script wsadmin Jython | EAR — script wsadmin Jython | EAR — Liberty Maven plugin | EAR — Liberty Maven plugin | EAR — Liberty Maven plugin | WAR eseguibile `java -jar` |
+| **Configurazione** | Admin Console / wsadmin | Admin Console / wsadmin | `server.xml` + `bootstrap.properties` | `server.xml` + `server.env` | `server.xml` + variabili d'ambiente | `application.properties` |
+| **Email** | JavaMail via JNDI | JavaMail via JNDI | Jakarta Mail via JNDI | JavaMail 1.5 via JNDI | Jakarta Mail 2.1 via JNDI | Spring Mail (`JavaMailSender`) |
+| **Dipendenze proprietarie** | Nessuna | **`was_public.jar`** (`com.ibm.websphere.appserver`) | Nessuna | Nessuna | Nessuna | Nessuna |
 
 ---
 
@@ -385,13 +399,13 @@ ibm-*-bnd.xmi (legacy)       ibm-*-bnd.xml (formato Liberty)
 
 ## Prerequisiti
 
-| Strumento | WebSphere | Liberty | Liberty-v2 | Spring Boot |
-|---|---|---|---|---|
-| Java JDK | 8 | **11** | **8 / 21 / 25** | 25 |
-| Maven | 3.6+ | 3.6+ | 3.6+ | 3.9+ |
-| PostgreSQL | 15+ | 15+ | 15+ | 15+ |
-| Application server | IBM WAS 8.5.5 (installazione locale) | Scaricato automaticamente dal plugin Maven | Scaricato automaticamente dal plugin Maven | Tomcat 11 embedded (nel JAR) |
-| Python 3 | Opzionale — generazione immagini SVG | Opzionale — generazione immagini SVG | Opzionale — generazione immagini SVG | Opzionale — generazione immagini SVG |
+| Strumento | WebSphere | Liberty | Liberty-v2 | Liberty Jakarta EE | Spring Boot |
+|---|---|---|---|---|---|
+| Java JDK | 8 | **11** | **8 / 21 / 25** | **22+** | 25 |
+| Maven | 3.6+ | 3.6+ | 3.6+ | **3.9+** | 3.9+ |
+| PostgreSQL | 15+ | 15+ | 15+ | **15+** | 15+ |
+| Application server | IBM WAS 8.5.5 (installazione locale) | Scaricato automaticamente dal plugin Maven | Scaricato automaticamente dal plugin Maven | Scaricato automaticamente dal plugin Maven | Tomcat 11 embedded (nel JAR) |
+| Python 3 | Opzionale — generazione immagini SVG | Opzionale — generazione immagini SVG | Opzionale — generazione immagini SVG | Opzionale — generazione immagini SVG | Opzionale — generazione immagini SVG |
 
 ---
 
@@ -427,7 +441,16 @@ mvn -pl paskinomercato-ear io.openliberty.tools:liberty-maven-plugin:run
 # App: http://localhost:9080/paskinomercato/
 ```
 
-### 4. Spring Boot
+### 4. Open Liberty Jakarta EE 10
+
+```bash
+cd PaskinoMercato-LibertyJakartaEE-v2
+mvn clean install -DskipTests
+mvn -f paskinomercato-ear/pom.xml liberty:run
+# App: http://localhost:9084/paskinomercato/
+```
+
+### 5. Spring Boot
 
 ```bash
 cd PaskinoMercato-SpringBoot/paskinomercato-spring
@@ -436,7 +459,7 @@ java -jar target/paskinomercato-spring-1.0.0.war
 # App: http://localhost:8080/
 ```
 
-### 5. WebSphere (richiede installazione WAS 8.5.5)
+### 6. WebSphere (richiede installazione WAS 8.5.5)
 
 ```bash
 cd PaskinoMercato-WebSphere
@@ -444,7 +467,7 @@ mvn clean package
 # Deploy tramite wsadmin — vedere WEBSPHERE_SETUP.md
 ```
 
-### 6. WebSphere V2 (richiede WAS 8.5.5 + `was_public.jar`)
+### 7. WebSphere V2 (richiede WAS 8.5.5 + `was_public.jar`)
 
 Prima di eseguire la build, assicurarsi che il file `was_public.jar` sia presente in `PaskinoMercato-WebSphere-v2/` oppure aggiornare la proprietà `was.public.jar` nel [`pom.xml`](PaskinoMercato-WebSphere-v2/pom.xml) con il percorso dell'installazione WAS locale (tipicamente `/opt/IBM/WebSphere/AppServer/dev/was_public.jar`).
 
@@ -467,6 +490,8 @@ mvn clean package
 | Liberty | [`PaskinoMercato-Liberty/README.md`](PaskinoMercato-Liberty/README.md) | Stack CDI + JPA, persistence unit, bean di servizio, Liberty server.xml |
 | Liberty V2 | [`PaskinoMercato-Liberty-v2/README.md`](PaskinoMercato-Liberty-v2/README.md) | Stack EJB 3.2 + JDBC, JAX-WS 2.2, migrazione da WebSphere-v2, server.xml Liberty |
 | Liberty V2 | [`PaskinoMercato-Liberty-v2/LIBERTY_SETUP.md`](PaskinoMercato-Liberty-v2/LIBERTY_SETUP.md) | Configurazione DataSource, JavaMail e JAX-WS su Open Liberty |
+| Liberty Jakarta EE | [`PaskinoMercato-LibertyJakartaEE-v2/README.md`](PaskinoMercato-LibertyJakartaEE-v2/README.md) | Stack Jakarta EE 10, EJB Lite 4.0, JDBC, Jakarta Mail e configurazione Open Liberty |
+| Liberty Jakarta EE | [`PaskinoMercato-LibertyJakartaEE-v2/LIBERTY_SETUP.md`](PaskinoMercato-LibertyJakartaEE-v2/LIBERTY_SETUP.md) | Configurazione DataSource, Jakarta Mail e deploy su Open Liberty |
 | Spring Boot | [`PaskinoMercato-SpringBoot/README.md`](PaskinoMercato-SpringBoot/README.md) | Stack Spring, controller, servizi, configurazione application.properties |
 
 ---
