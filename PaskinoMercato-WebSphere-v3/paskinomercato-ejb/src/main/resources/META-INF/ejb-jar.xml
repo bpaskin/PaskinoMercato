@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ejb-jar xmlns="http://java.sun.com/xml/ns/j2ee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee
+             http://java.sun.com/xml/ns/j2ee/ejb-jar_2_1.xsd"
+         version="2.1"
+         id="ejb-jar_ID">
+    <display-name>PaskinoMercato EJB Module</display-name>
+    <enterprise-beans>
+
+        <!-- ============================================================
+             BMP Entity Beans
+             ============================================================ -->
+
+        <entity id="ProdottoEntityBean">
+            <display-name>ProdottoEntityBean</display-name>
+            <ejb-name>ProdottoEntityBean</ejb-name>
+            <local-home>it.paskinomercato.ejb.entity.prodotto.ProdottoEntityLocalHome</local-home>
+            <local>it.paskinomercato.ejb.entity.prodotto.ProdottoEntityLocal</local>
+            <ejb-class>it.paskinomercato.ejb.entity.prodotto.ProdottoEntityBean</ejb-class>
+            <persistence-type>Bean</persistence-type>
+            <prim-key-class>java.lang.Integer</prim-key-class>
+            <reentrant>false</reentrant>
+            <resource-ref id="ResourceRef_ProdottoJdbc">
+                <res-ref-name>jdbc/PaskinoMercatoDS</res-ref-name>
+                <res-type>javax.sql.DataSource</res-type>
+                <res-auth>Container</res-auth>
+            </resource-ref>
+        </entity>
+
+        <entity id="CategoriaEntityBean">
+            <display-name>CategoriaEntityBean</display-name>
+            <ejb-name>CategoriaEntityBean</ejb-name>
+            <local-home>it.paskinomercato.ejb.entity.categoria.CategoriaEntityLocalHome</local-home>
+            <local>it.paskinomercato.ejb.entity.categoria.CategoriaEntityLocal</local>
+            <ejb-class>it.paskinomercato.ejb.entity.categoria.CategoriaEntityBean</ejb-class>
+            <persistence-type>Bean</persistence-type>
+            <prim-key-class>java.lang.Integer</prim-key-class>
+            <reentrant>false</reentrant>
+            <resource-ref id="ResourceRef_CategoriaJdbc">
+                <res-ref-name>jdbc/PaskinoMercatoDS</res-ref-name>
+                <res-type>javax.sql.DataSource</res-type>
+                <res-auth>Container</res-auth>
+            </resource-ref>
+        </entity>
+
+        <entity id="ClienteEntityBean">
+            <display-name>ClienteEntityBean</display-name>
+            <ejb-name>ClienteEntityBean</ejb-name>
+            <local-home>it.paskinomercato.ejb.entity.cliente.ClienteEntityLocalHome</local-home>
+            <local>it.paskinomercato.ejb.entity.cliente.ClienteEntityLocal</local>
+            <ejb-class>it.paskinomercato.ejb.entity.cliente.ClienteEntityBean</ejb-class>
+            <persistence-type>Bean</persistence-type>
+            <prim-key-class>java.lang.Integer</prim-key-class>
+            <reentrant>false</reentrant>
+            <resource-ref id="ResourceRef_ClienteEntityJdbc">
+                <res-ref-name>jdbc/PaskinoMercatoDS</res-ref-name>
+                <res-type>javax.sql.DataSource</res-type>
+                <res-auth>Container</res-auth>
+            </resource-ref>
+        </entity>
+
+        <entity id="OrdineEntityBean">
+            <display-name>OrdineEntityBean</display-name>
+            <ejb-name>OrdineEntityBean</ejb-name>
+            <local-home>it.paskinomercato.ejb.entity.ordine.OrdineEntityLocalHome</local-home>
+            <local>it.paskinomercato.ejb.entity.ordine.OrdineEntityLocal</local>
+            <ejb-class>it.paskinomercato.ejb.entity.ordine.OrdineEntityBean</ejb-class>
+            <persistence-type>Bean</persistence-type>
+            <prim-key-class>java.lang.Integer</prim-key-class>
+            <reentrant>false</reentrant>
+            <resource-ref id="ResourceRef_OrdineEntityJdbc">
+                <res-ref-name>jdbc/PaskinoMercatoDS</res-ref-name>
+                <res-type>javax.sql.DataSource</res-type>
+                <res-auth>Container</res-auth>
+            </resource-ref>
+        </entity>
+
+        <!-- ============================================================
+             Session Beans
+             ============================================================ -->
+
+        <session id="CatalogoBean">
+            <display-name>CatalogoBean</display-name>
+            <ejb-name>CatalogoBean</ejb-name>
+            <local-home>it.paskinomercato.ejb.catalogo.CatalogoLocalHome</local-home>
+            <local>it.paskinomercato.ejb.catalogo.CatalogoLocal</local>
+            <ejb-class>it.paskinomercato.ejb.catalogo.CatalogoBean</ejb-class>
+            <session-type>Stateless</session-type>
+            <transaction-type>Container</transaction-type>
+            <ejb-local-ref id="EJBLocalRef_CatalogoProdottoEntity">
+                <ejb-ref-name>ejb/ProdottoEntityBean</ejb-ref-name>
+                <ejb-ref-type>Entity</ejb-ref-type>
+                <local-home>it.paskinomercato.ejb.entity.prodotto.ProdottoEntityLocalHome</local-home>
+                <local>it.paskinomercato.ejb.entity.prodotto.ProdottoEntityLocal</local>
+                <ejb-link>ProdottoEntityBean</ejb-link>
+            </ejb-local-ref>
+            <ejb-local-ref id="EJBLocalRef_CatalogoCategoriaEntity">
+                <ejb-ref-name>ejb/CategoriaEntityBean</ejb-ref-name>
+                <ejb-ref-type>Entity</ejb-ref-type>
+                <local-home>it.paskinomercato.ejb.entity.categoria.CategoriaEntityLocalHome</local-home>
+                <local>it.paskinomercato.ejb.entity.categoria.CategoriaEntityLocal</local>
+                <ejb-link>CategoriaEntityBean</ejb-link>
+            </ejb-local-ref>
+        </session>
+
+        <session id="OrdineBean">
+            <display-name>OrdineBean</display-name>
+            <ejb-name>OrdineBean</ejb-name>
+            <local-home>it.paskinomercato.ejb.ordine.OrdineLocalHome</local-home>
+            <local>it.paskinomercato.ejb.ordine.OrdineLocal</local>
+            <ejb-class>it.paskinomercato.ejb.ordine.OrdineBean</ejb-class>
+            <session-type>Stateless</session-type>
+            <transaction-type>Container</transaction-type>
+            <ejb-local-ref id="EJBLocalRef_OrdineEntity">
+                <ejb-ref-name>ejb/OrdineEntityBean</ejb-ref-name>
+                <ejb-ref-type>Entity</ejb-ref-type>
+                <local-home>it.paskinomercato.ejb.entity.ordine.OrdineEntityLocalHome</local-home>
+                <local>it.paskinomercato.ejb.entity.ordine.OrdineEntityLocal</local>
+                <ejb-link>OrdineEntityBean</ejb-link>
+            </ejb-local-ref>
+            <resource-ref id="ResourceRef_OrdineJdbc">
+                <res-ref-name>jdbc/PaskinoMercatoDS</res-ref-name>
+                <res-type>javax.sql.DataSource</res-type>
+                <res-auth>Container</res-auth>
+            </resource-ref>
+        </session>
+
+        <session id="ClienteBean">
+            <display-name>ClienteBean</display-name>
+            <ejb-name>ClienteBean</ejb-name>
+            <local-home>it.paskinomercato.ejb.cliente.ClienteLocalHome</local-home>
+            <local>it.paskinomercato.ejb.cliente.ClienteLocal</local>
+            <ejb-class>it.paskinomercato.ejb.cliente.ClienteBean</ejb-class>
+            <session-type>Stateless</session-type>
+            <transaction-type>Container</transaction-type>
+            <ejb-local-ref id="EJBLocalRef_ClienteEntity">
+                <ejb-ref-name>ejb/ClienteEntityBean</ejb-ref-name>
+                <ejb-ref-type>Entity</ejb-ref-type>
+                <local-home>it.paskinomercato.ejb.entity.cliente.ClienteEntityLocalHome</local-home>
+                <local>it.paskinomercato.ejb.entity.cliente.ClienteEntityLocal</local>
+                <ejb-link>ClienteEntityBean</ejb-link>
+            </ejb-local-ref>
+            <resource-ref id="ResourceRef_ClienteJdbc">
+                <res-ref-name>jdbc/PaskinoMercatoDS</res-ref-name>
+                <res-type>javax.sql.DataSource</res-type>
+                <res-auth>Container</res-auth>
+            </resource-ref>
+        </session>
+
+        <session id="CarrelloBean">
+            <display-name>CarrelloBean</display-name>
+            <ejb-name>CarrelloBean</ejb-name>
+            <local-home>it.paskinomercato.ejb.carrello.CarrelloLocalHome</local-home>
+            <local>it.paskinomercato.ejb.carrello.CarrelloLocal</local>
+            <ejb-class>it.paskinomercato.ejb.carrello.CarrelloBean</ejb-class>
+            <session-type>Stateful</session-type>
+            <transaction-type>Container</transaction-type>
+        </session>
+
+        <session id="DatabaseInitializerBean">
+            <display-name>DatabaseInitializerBean</display-name>
+            <ejb-name>DatabaseInitializerBean</ejb-name>
+            <local-home>it.paskinomercato.ejb.database.DatabaseInitializerLocalHome</local-home>
+            <local>it.paskinomercato.ejb.database.DatabaseInitializerLocal</local>
+            <ejb-class>it.paskinomercato.ejb.database.DatabaseInitializerBean</ejb-class>
+            <session-type>Stateless</session-type>
+            <transaction-type>Container</transaction-type>
+            <resource-ref id="ResourceRef_DatabaseInitializerJdbc">
+                <res-ref-name>jdbc/PaskinoMercatoDS</res-ref-name>
+                <res-type>javax.sql.DataSource</res-type>
+                <res-auth>Container</res-auth>
+            </resource-ref>
+        </session>
+
+        <session id="MailBean">
+            <display-name>MailBean</display-name>
+            <ejb-name>MailBean</ejb-name>
+            <local-home>it.paskinomercato.ejb.mail.MailLocalHome</local-home>
+            <local>it.paskinomercato.ejb.mail.MailLocal</local>
+            <ejb-class>it.paskinomercato.ejb.mail.MailBean</ejb-class>
+            <session-type>Stateless</session-type>
+            <transaction-type>Container</transaction-type>
+            <resource-ref id="ResourceRef_MailMercatoMail">
+                <res-ref-name>mail/MercatoMail</res-ref-name>
+                <res-type>javax.mail.Session</res-type>
+                <res-auth>Container</res-auth>
+            </resource-ref>
+            <resource-ref id="ResourceRef_MailJdbc">
+                <res-ref-name>jdbc/PaskinoMercatoDS</res-ref-name>
+                <res-type>javax.sql.DataSource</res-type>
+                <res-auth>Container</res-auth>
+            </resource-ref>
+        </session>
+
+    </enterprise-beans>
+
+    <assembly-descriptor>
+        <container-transaction>
+            <method>
+                <ejb-name>OrdineBean</ejb-name>
+                <method-name>creaOrdine</method-name>
+            </method>
+            <trans-attribute>Required</trans-attribute>
+        </container-transaction>
+        <container-transaction>
+            <method>
+                <ejb-name>OrdineBean</ejb-name>
+                <method-name>*</method-name>
+            </method>
+            <trans-attribute>Required</trans-attribute>
+        </container-transaction>
+        <container-transaction>
+            <method>
+                <ejb-name>CatalogoBean</ejb-name>
+                <method-name>*</method-name>
+            </method>
+            <trans-attribute>Supports</trans-attribute>
+        </container-transaction>
+        <container-transaction>
+            <method>
+                <ejb-name>ClienteBean</ejb-name>
+                <method-name>*</method-name>
+            </method>
+            <trans-attribute>Required</trans-attribute>
+        </container-transaction>
+        <container-transaction>
+            <method>
+                <ejb-name>MailBean</ejb-name>
+                <method-name>*</method-name>
+            </method>
+            <trans-attribute>Required</trans-attribute>
+        </container-transaction>
+        <container-transaction>
+            <method>
+                <ejb-name>CarrelloBean</ejb-name>
+                <method-name>*</method-name>
+            </method>
+            <trans-attribute>Required</trans-attribute>
+        </container-transaction>
+        <container-transaction>
+            <method>
+                <ejb-name>DatabaseInitializerBean</ejb-name>
+                <method-name>*</method-name>
+            </method>
+            <trans-attribute>NotSupported</trans-attribute>
+        </container-transaction>
+        <!-- Entity bean transactions -->
+        <container-transaction>
+            <method>
+                <ejb-name>ProdottoEntityBean</ejb-name>
+                <method-name>*</method-name>
+            </method>
+            <trans-attribute>Required</trans-attribute>
+        </container-transaction>
+        <container-transaction>
+            <method>
+                <ejb-name>CategoriaEntityBean</ejb-name>
+                <method-name>*</method-name>
+            </method>
+            <trans-attribute>Required</trans-attribute>
+        </container-transaction>
+        <container-transaction>
+            <method>
+                <ejb-name>ClienteEntityBean</ejb-name>
+                <method-name>*</method-name>
+            </method>
+            <trans-attribute>Required</trans-attribute>
+        </container-transaction>
+        <container-transaction>
+            <method>
+                <ejb-name>OrdineEntityBean</ejb-name>
+                <method-name>*</method-name>
+            </method>
+            <trans-attribute>Required</trans-attribute>
+        </container-transaction>
+    </assembly-descriptor>
+</ejb-jar>

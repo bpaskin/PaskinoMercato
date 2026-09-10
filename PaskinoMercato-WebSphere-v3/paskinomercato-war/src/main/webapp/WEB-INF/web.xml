@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+             http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+         version="2.5"
+         id="WebApp_ID">
+
+    <display-name>PaskinoMercato</display-name>
+    <description>Supermarket Online - IT/EN - EJB 2.1 / JAX-RPC / WebSphere</description>
+
+    <listener>
+        <listener-class>it.paskinomercato.servlet.DatabaseStartupListener</listener-class>
+    </listener>
+
+    <servlet>
+        <servlet-name>CatalogoServlet</servlet-name>
+        <servlet-class>it.paskinomercato.servlet.CatalogoServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>CarrelloServlet</servlet-name>
+        <servlet-class>it.paskinomercato.servlet.CarrelloServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>CheckoutServlet</servlet-name>
+        <servlet-class>it.paskinomercato.servlet.CheckoutServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>LoginServlet</servlet-name>
+        <servlet-class>it.paskinomercato.servlet.LoginServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>LinguaServlet</servlet-name>
+        <servlet-class>it.paskinomercato.servlet.LinguaServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>OrdineServlet</servlet-name>
+        <servlet-class>it.paskinomercato.servlet.OrdineServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>MercatoServiceServlet</servlet-name>
+        <servlet-class>it.paskinomercato.ws.MercatoServiceImpl</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CatalogoServlet</servlet-name>
+        <url-pattern>/catalogo</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>CarrelloServlet</servlet-name>
+        <url-pattern>/carrello</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>CheckoutServlet</servlet-name>
+        <url-pattern>/checkout</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>LoginServlet</servlet-name>
+        <url-pattern>/login</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>LinguaServlet</servlet-name>
+        <url-pattern>/lingua</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OrdineServlet</servlet-name>
+        <url-pattern>/ordini</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>MercatoServiceServlet</servlet-name>
+        <url-pattern>/MercatoService</url-pattern>
+    </servlet-mapping>
+
+    <session-config>
+        <session-timeout>30</session-timeout>
+    </session-config>
+
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+
+    <error-page>
+        <error-code>404</error-code>
+        <location>/WEB-INF/jsp/error404.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/WEB-INF/jsp/error500.jsp</location>
+    </error-page>
+
+    <ejb-local-ref id="EJBLocalRef_Web_Catalogo">
+        <ejb-ref-name>ejb/CatalogoBean</ejb-ref-name>
+        <ejb-ref-type>Session</ejb-ref-type>
+        <local-home>it.paskinomercato.ejb.catalogo.CatalogoLocalHome</local-home>
+        <local>it.paskinomercato.ejb.catalogo.CatalogoLocal</local>
+        <ejb-link>../paskinomercato-ejb.jar#CatalogoBean</ejb-link>
+    </ejb-local-ref>
+    <ejb-local-ref id="EJBLocalRef_Web_Ordine">
+        <ejb-ref-name>ejb/OrdineBean</ejb-ref-name>
+        <ejb-ref-type>Session</ejb-ref-type>
+        <local-home>it.paskinomercato.ejb.ordine.OrdineLocalHome</local-home>
+        <local>it.paskinomercato.ejb.ordine.OrdineLocal</local>
+        <ejb-link>../paskinomercato-ejb.jar#OrdineBean</ejb-link>
+    </ejb-local-ref>
+    <ejb-local-ref id="EJBLocalRef_Web_Cliente">
+        <ejb-ref-name>ejb/ClienteBean</ejb-ref-name>
+        <ejb-ref-type>Session</ejb-ref-type>
+        <local-home>it.paskinomercato.ejb.cliente.ClienteLocalHome</local-home>
+        <local>it.paskinomercato.ejb.cliente.ClienteLocal</local>
+        <ejb-link>../paskinomercato-ejb.jar#ClienteBean</ejb-link>
+    </ejb-local-ref>
+    <ejb-local-ref id="EJBLocalRef_Web_Carrello">
+        <ejb-ref-name>ejb/CarrelloBean</ejb-ref-name>
+        <ejb-ref-type>Session</ejb-ref-type>
+        <local-home>it.paskinomercato.ejb.carrello.CarrelloLocalHome</local-home>
+        <local>it.paskinomercato.ejb.carrello.CarrelloLocal</local>
+        <ejb-link>../paskinomercato-ejb.jar#CarrelloBean</ejb-link>
+    </ejb-local-ref>
+    <ejb-local-ref id="EJBLocalRef_Web_Mail">
+        <ejb-ref-name>ejb/MailBean</ejb-ref-name>
+        <ejb-ref-type>Session</ejb-ref-type>
+        <local-home>it.paskinomercato.ejb.mail.MailLocalHome</local-home>
+        <local>it.paskinomercato.ejb.mail.MailLocal</local>
+        <ejb-link>../paskinomercato-ejb.jar#MailBean</ejb-link>
+    </ejb-local-ref>
+
+    <ejb-local-ref id="EJBLocalRef_Web_DatabaseInitializer">
+        <ejb-ref-name>ejb/DatabaseInitializerBean</ejb-ref-name>
+        <ejb-ref-type>Session</ejb-ref-type>
+        <local-home>it.paskinomercato.ejb.database.DatabaseInitializerLocalHome</local-home>
+        <local>it.paskinomercato.ejb.database.DatabaseInitializerLocal</local>
+        <ejb-link>../paskinomercato-ejb.jar#DatabaseInitializerBean</ejb-link>
+    </ejb-local-ref>
+
+</web-app>

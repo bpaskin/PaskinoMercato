@@ -1,14 +1,14 @@
 # PaskinoMercato 🛒
 
-**Supermercato Online Italiano** — Applicazione di riferimento per un supermercato online italiano, implementata in **sei varianti** distinte della piattaforma Java che illustrano l'evoluzione della tecnologia enterprise attraverso le generazioni.
+**Supermercato Online Italiano** — Applicazione di riferimento per un supermercato online italiano, implementata in **sette varianti** distinte della piattaforma Java che illustrano l'evoluzione della tecnologia enterprise attraverso le generazioni.
 
-La stessa logica di business — vetrina bilingue (🇮🇹 / 🇬🇧), consegna solo in Italia, prezzi in Euro, catalogo di massimo **1.503 prodotti**, backend PostgreSQL — è fornita in sei implementazioni autonome: due varianti WebSphere (standard e avanzata con maggiori dipendenze WAS proprietarie), tre varianti Open Liberty (JPA 2.1, migrazione diretta da WebSphere-v2 con EJB 3.2 + JDBC e Jakarta EE 10 con EJB Lite 4.0 + JDBC) e `JdbcTemplate` su Spring Boot.
+La stessa logica di business — vetrina bilingue (🇮🇹 / 🇬🇧), consegna solo in Italia, prezzi in Euro — è fornita in sette implementazioni autonome: tre varianti WebSphere (standard, avanzata con dipendenze WAS proprietarie, e una versione standalone con H2 in-memory), tre varianti Open Liberty (JPA 2.1, migrazione diretta da WebSphere-v2 con EJB 3.2 + JDBC e Jakarta EE 10 con EJB Lite 4.0 + JDBC) e `JdbcTemplate` su Spring Boot.
 
 ---
 
 ## Indice
 
-1. [Le Sei Varianti](#le-sei-varianti)
+1. [Le Sette Varianti](#le-sette-varianti)
 2. [Funzionalità dell'Applicazione](#funzionalità-dellapplicazione)
 3. [Struttura del Repository](#struttura-del-repository)
 4. [Architettura Generale](#architettura-generale)
@@ -23,20 +23,23 @@ La stessa logica di business — vetrina bilingue (🇮🇹 / 🇬🇧), consegn
 
 ---
 
-## Le Sei Varianti
+## Le Sette Varianti
 
 | Directory | Piattaforma | Java | Persistenza | Web Service | Porta |
 |---|---|---|---|---|---|
-| [`PaskinoMercato-WebSphere/`](PaskinoMercato-WebSphere/) | IBM WebSphere Application Server 8.5.5 | Java 8 | JDBC diretto | JAX-RPC 1.1 (SOAP) | 9080 |
-| [`PaskinoMercato-WebSphere-v2/`](PaskinoMercato-WebSphere-v2/) | IBM WebSphere Application Server 8.5.5 | Java 8 | JDBC diretto + API WAS proprietarie | JAX-RPC 1.1 (SOAP) | 9080 |
-| [`PaskinoMercato-Liberty/`](PaskinoMercato-Liberty/) | Open Liberty 26 | Java 11 | JPA 2.1 (EclipseLink) | — | 9080 |
-| [`PaskinoMercato-Liberty-v2/`](PaskinoMercato-Liberty-v2/) | Open Liberty 26 | Java 8 (bytecode) / 21+ (runtime) | JDBC diretto via JNDI | JAX-WS 2.2 (SOAP) | 9080 |
-| [`PaskinoMercato-LibertyJakartaEE-v2/`](PaskinoMercato-LibertyJakartaEE-v2/) | Open Liberty 26.0.0.9 / Jakarta EE 10 | Java 22+ | JDBC diretto via JNDI | JAX-WS (SOAP) | 9084 |
-| [`PaskinoMercato-SpringBoot/`](PaskinoMercato-SpringBoot/) | Spring Boot 4.1 / Tomcat 11 embedded | Java 25 | JdbcTemplate | — | 8080 |
+| [`PaskinoMercato-WebSphere/`](PaskinoMercato-WebSphere/) | IBM WebSphere Application Server 8.5.5 | Java 8 | JDBC diretto → PostgreSQL | JAX-RPC 1.1 (SOAP) | 9080 |
+| [`PaskinoMercato-WebSphere-v2/`](PaskinoMercato-WebSphere-v2/) | IBM WebSphere Application Server 8.5.5 | Java 8 | JDBC diretto + API WAS proprietarie → PostgreSQL | JAX-RPC 1.1 (SOAP) | 9080 |
+| [`PaskinoMercato-WebSphere-v3/`](PaskinoMercato-WebSphere-v3/) | IBM WebSphere Application Server 8.5.5 | Java 8 | JDBC diretto → **H2 in-memory** | JAX-RPC 1.1 (SOAP) | 9080 |
+| [`PaskinoMercato-Liberty/`](PaskinoMercato-Liberty/) | Open Liberty 26 | Java 11 | JPA 2.1 (EclipseLink) → PostgreSQL | — | 9080 |
+| [`PaskinoMercato-Liberty-v2/`](PaskinoMercato-Liberty-v2/) | Open Liberty 26 | Java 8 (bytecode) / 21+ (runtime) | JDBC diretto via JNDI → PostgreSQL | JAX-WS 2.2 (SOAP) | 9080 |
+| [`PaskinoMercato-LibertyJakartaEE-v2/`](PaskinoMercato-LibertyJakartaEE-v2/) | Open Liberty 26.0.0.9 / Jakarta EE 10 | Java 22+ | JDBC diretto via JNDI → PostgreSQL | JAX-WS (SOAP) | 9084 |
+| [`PaskinoMercato-SpringBoot/`](PaskinoMercato-SpringBoot/) | Spring Boot 4.1 / Tomcat 11 embedded | Java 25 | JdbcTemplate → PostgreSQL | — | 8080 |
 
 Ogni directory è un progetto Maven autonomo con il proprio `README.md`, istruzioni di build e guida al deploy.
 
 > **Nota:** `PaskinoMercato-WebSphere-v2` è una variante intenzionalmente più complessa di `PaskinoMercato-WebSphere`. Introduce dipendenze dirette sulle API proprietarie IBM WebSphere (`was_public.jar`) e pattern architetturali che aumentano significativamente il costo di migrazione verso Liberty. È pensata come punto di partenza realistico per esercizi di modernizzazione più impegnativi.
+
+> **Nota:** `PaskinoMercato-WebSphere-v3` è una variante **standalone** di `PaskinoMercato-WebSphere`. Sostituisce PostgreSQL con un database **H2 in-memory** inizializzato automaticamente all'avvio dell'applicazione tramite un apposito EJB (`DatabaseInitializerBean`). Non richiede un server di database esterno — ideale per demo, test locali e ambienti senza infrastruttura PostgreSQL. I dati (clienti, ordini, carrello) vengono azzerati a ogni riavvio o redeploy.
 
 > **Nota:** `PaskinoMercato-Liberty-v2` è il risultato diretto della migrazione di `PaskinoMercato-WebSphere-v2` su Open Liberty. Mantiene lo stile JDBC diretto e gli EJB (aggiornati da 2.1 a 3.2), rimpiazza JAX-RPC con JAX-WS 2.2 ed elimina tutte le dipendenze sulle API proprietarie WAS. È il punto di partenza per confrontare l'impegno di migrazione rispetto alla variante Liberty standard (che usa JPA).
 
@@ -68,7 +71,7 @@ PaskinoMercato/
 │
 ├── README.md                            ← Questo file
 │
-├── PaskinoMercato-WebSphere/            ← JavaEE 5 / EJB 2.1 / WAS 8.5.5
+├── PaskinoMercato-WebSphere/            ← JavaEE 5 / EJB 2.1 / WAS 8.5.5 / PostgreSQL
 │   ├── paskinomercato-ejb/              ← Session Bean EJB 2.1 + Entity Bean BMP
 │   ├── paskinomercato-war/              ← Servlet 2.5 + JSP 2.1 + JAX-RPC
 │   ├── paskinomercato-ear/              ← Packaging EAR
@@ -76,13 +79,21 @@ PaskinoMercato/
 │   ├── WEBSPHERE_SETUP.md               ← Guida alla configurazione risorse WAS
 │   └── README.md
 │
-├── PaskinoMercato-WebSphere-v2/         ← JavaEE 5 / EJB 2.1 / WAS 8.5.5 + API WAS proprietarie
+├── PaskinoMercato-WebSphere-v2/         ← JavaEE 5 / EJB 2.1 / WAS 8.5.5 + API WAS proprietarie / PostgreSQL
 │   ├── paskinomercato-ejb/              ← Session Bean EJB 2.1 + Entity Bean BMP
 │   ├── paskinomercato-war/              ← Servlet 2.5 + JSP 2.1 + JAX-RPC + ServerNameFilter (WAS API)
 │   ├── paskinomercato-ear/              ← Packaging EAR
 │   ├── scripts/wsadmin/                 ← Installer wsadmin automatizzato (Jython)
 │   ├── was_public.jar                   ← JAR API WAS locale (vedere sezione dedicata)
 │   ├── WEBSPHERE_SETUP.md               ← Guida alla configurazione risorse WAS
+│   └── README.md
+│
+├── PaskinoMercato-WebSphere-v3/         ← JavaEE 5 / EJB 2.1 / WAS 8.5.5 / H2 in-memory (standalone)
+│   ├── paskinomercato-ejb/              ← Session Bean EJB 2.1 + Entity Bean BMP + DatabaseInitializerBean
+│   ├── paskinomercato-war/              ← Servlet 2.5 + JSP 2.1 + JAX-RPC
+│   ├── paskinomercato-ear/              ← Packaging EAR
+│   ├── scripts/wsadmin/                 ← Installer wsadmin automatizzato (Jython)
+│   ├── WEBSPHERE_SETUP.md               ← Guida alla configurazione risorse WAS (H2)
 │   └── README.md
 │
 ├── PaskinoMercato-Liberty/              ← CDI + JPA 2.1 / Open Liberty 26 / Java 11
@@ -129,44 +140,46 @@ Browser
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  Livello Web (HTTP)                                                     │
 │                                                                         │
-│  WebSphere:    Servlet 2.5 + JSP 2.1 + JSTL 1.2                       │
-│  Liberty:      Servlet 3.1 + JSP 2.3 + JSTL 1.2 + EL 3.0             │
-│  Liberty-v2:   Servlet 3.1 + JSP 2.3 + JSTL 1.2 + EL 3.0             │
-│  Jakarta EE:   Servlet 6.0 + Jakarta Pages 3.1 + JSTL + EL           │
-│  Spring:       Spring MVC @Controller + JSP 3 + JSTL 3 + EL 6         │
+│  WebSphere / v2 / v3:  Servlet 2.5 + JSP 2.1 + JSTL 1.2              │
+│  Liberty:              Servlet 3.1 + JSP 2.3 + JSTL 1.2 + EL 3.0     │
+│  Liberty-v2:           Servlet 3.1 + JSP 2.3 + JSTL 1.2 + EL 3.0     │
+│  Jakarta EE:           Servlet 6.0 + Jakarta Pages 3.1 + JSTL + EL    │
+│  Spring:               Spring MVC @Controller + JSP 3 + JSTL 3 + EL 6 │
 └─────────────────────────────────────────────────────────────────────────┘
   │
   ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  Livello Servizi (Business Logic)                                       │
 │                                                                         │
-│  WebSphere:    EJB 2.1 Session Bean Stateless + Entity Bean BMP        │
-│  Liberty:      CDI @ApplicationScoped + JTA @Transactional             │
-│  Liberty-v2:   EJB 3.2 Session Bean Stateless + CMT                   │
-│  Jakarta EE:   EJB Lite 4.0 Stateless/Stateful + CMT                 │
-│  Spring:       @Service + Spring @Transactional                        │
+│  WebSphere / v2 / v3:  EJB 2.1 Session Bean Stateless + Entity Bean BMP│
+│  Liberty:              CDI @ApplicationScoped + JTA @Transactional     │
+│  Liberty-v2:           EJB 3.2 Session Bean Stateless + CMT            │
+│  Jakarta EE:           EJB Lite 4.0 Stateless/Stateful + CMT          │
+│  Spring:               @Service + Spring @Transactional                │
 └─────────────────────────────────────────────────────────────────────────┘
   │
   ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  Livello Persistenza                                                    │
 │                                                                         │
-│  WebSphere:    JDBC diretto via JNDI DataSource                        │
-│  Liberty:      JPA 2.1 (EclipseLink) — EntityManager + JPQL           │
-│  Liberty-v2:   JDBC diretto via JNDI DataSource                        │
-│  Jakarta EE:   JDBC diretto via JNDI DataSource                        │
-│  Spring:       JdbcTemplate via HikariCP                               │
+│  WebSphere / v2:   JDBC diretto via JNDI DataSource → PostgreSQL 15+   │
+│  WebSphere-v3:     JDBC diretto via JNDI DataSource → H2 in-memory     │
+│  Liberty:          JPA 2.1 (EclipseLink) — EntityManager + JPQL        │
+│  Liberty-v2:       JDBC diretto via JNDI DataSource                    │
+│  Jakarta EE:       JDBC diretto via JNDI DataSource                    │
+│  Spring:           JdbcTemplate via HikariCP                           │
 └─────────────────────────────────────────────────────────────────────────┘
   │
   ▼
-PostgreSQL 15+ — schema "mercato"
+PostgreSQL 15+ — schema "mercato"  (tutte le varianti tranne WebSphere-v3)
+H2 in-memory — schema "mercato"    (WebSphere-v3 — azzerato a ogni riavvio)
 ```
 
 ### Gestione del Carrello
 
 | Variante | Approccio |
 |---|---|
-| WebSphere | EJB Stateful (`CarrelloBean`) + tabella `mercato.carrello` |
+| WebSphere / v2 / v3 | EJB Stateful (`CarrelloBean`) + tabella `mercato.carrello` |
 | Liberty | POJO `Serializable` in `HttpSession` (nessun EJB Stateful) |
 | Liberty-v2 | EJB 3.2 Stateful (`CarrelloBean`) + tabella `mercato.carrello` |
 | Spring Boot | `CarrelloSessionBean` annotato `@SessionScope` (proxy CGLIB) |
@@ -223,28 +236,30 @@ psql -U mercato -d mercatodb \
 | `mercato.indirizzo` | — | `paese` vincolato a `'IT'` |
 | `mercato.ordine` | — | Stato ENUM |
 | `mercato.riga_ordine` | — | `subtotale` colonna `GENERATED ALWAYS AS STORED` |
-| `mercato.carrello` | — | Solo WebSphere e Liberty (rimossa in Spring Boot) |
+| `mercato.carrello` | — | Solo WebSphere (tutte e tre le varianti) e Liberty (rimossa in Spring Boot) |
 
-> **Nota:** La variante WebSphere utilizza `mercato.carrello` per il carrello EJB Stateful. La variante Liberty mantiene la tabella (svuotata alla creazione dell'ordine) ma non usa EJB Stateful. La variante Spring Boot non usa questa tabella.
+> **Nota:** Le tre varianti WebSphere utilizzano `mercato.carrello` per il carrello EJB Stateful. La variante Liberty mantiene la tabella (svuotata alla creazione dell'ordine) ma non usa EJB Stateful. La variante Spring Boot non usa questa tabella. In WebSphere-v3 il database H2 è in-memory, quindi anche il carrello viene azzerato a ogni riavvio.
 
 ---
 
 ## Confronto Tecnologico
 
-| Aspetto | WebSphere 8.5.5 | WebSphere 8.5.5 v2 | Open Liberty 26 | Open Liberty 26 v2 | Jakarta EE 10 / Liberty 26 | Spring Boot 4.1 |
-|---|---|---|---|---|---|---|
-| **Java** | 8 | 8 | 11 | 8 (bytecode) / 21+ (runtime) | 22+ | 25 |
-| **Standard** | JavaEE 5 | JavaEE 5 + API WAS proprietarie | Jakarta EE (CDI 1.2 + JPA 2.1) | Java EE 7 (EJB 3.2) | Jakarta EE 10 (EJB Lite 4.0) | Spring Framework 7 |
-| **Servizi** | EJB 2.1 — solo descriptor XML | EJB 2.1 + `com.ibm.websphere.*` API | CDI `@ApplicationScoped` + JTA | EJB 3.2 `@Stateless` / `@Stateful` | EJB Lite 4.0 `@Stateless` / `@Stateful` | Spring `@Service` + `@Transactional` |
-| **Persistenza** | JDBC diretto via JNDI `DataSource` | JDBC diretto via JNDI `DataSource` | **JPA 2.1** (EclipseLink) — `EntityManager` | JDBC diretto via JNDI `DataSource` | JDBC diretto via JNDI `DataSource` | `JdbcTemplate` via HikariCP |
-| **Carrello** | EJB Stateful + tabella DB | EJB Stateful + tabella DB | POJO in `HttpSession` | EJB 3.2 Stateful + tabella DB | EJB Lite 4.0 Stateful + tabella DB | `@SessionScope` Spring bean |
-| **Transazioni** | CMT (Container-Managed) | CMT (Container-Managed) | JTA `@Transactional` | CMT (Container-Managed) | CMT (Container-Managed) | Spring `@Transactional` |
-| **Web layer** | JSP 2.1 + JSTL 1.2 + EL 2.2 | JSP 2.1 + JSTL 1.2 + EL 2.2 | JSP 2.3 + JSTL 1.2 + EL 3.0 | JSP 2.3 + JSTL 1.2 + EL 3.0 | Servlet 6.0 + Jakarta Pages 3.1 | JSP 3 + JSTL 3 + EL 6 |
-| **Web service** | JAX-RPC 1.1 (document/literal) | JAX-RPC 1.1 (document/literal) | — | **JAX-WS 2.2** (SOAP) | JAX-WS (SOAP) | — |
-| **Deploy** | EAR — script wsadmin Jython | EAR — script wsadmin Jython | EAR — Liberty Maven plugin | EAR — Liberty Maven plugin | EAR — Liberty Maven plugin | WAR eseguibile `java -jar` |
-| **Configurazione** | Admin Console / wsadmin | Admin Console / wsadmin | `server.xml` + `bootstrap.properties` | `server.xml` + `server.env` | `server.xml` + variabili d'ambiente | `application.properties` |
-| **Email** | JavaMail via JNDI | JavaMail via JNDI | Jakarta Mail via JNDI | JavaMail 1.5 via JNDI | Jakarta Mail 2.1 via JNDI | Spring Mail (`JavaMailSender`) |
-| **Dipendenze proprietarie** | Nessuna | **`was_public.jar`** (`com.ibm.websphere.appserver`) | Nessuna | Nessuna | Nessuna | Nessuna |
+| Aspetto | WebSphere 8.5.5 | WebSphere 8.5.5 v2 | WebSphere 8.5.5 v3 | Open Liberty 26 | Open Liberty 26 v2 | Jakarta EE 10 / Liberty 26 | Spring Boot 4.1 |
+|---|---|---|---|---|---|---|---|
+| **Java** | 8 | 8 | 8 | 11 | 8 (bytecode) / 21+ (runtime) | 22+ | 25 |
+| **Standard** | JavaEE 5 | JavaEE 5 + API WAS proprietarie | JavaEE 5 | Jakarta EE (CDI 1.2 + JPA 2.1) | Java EE 7 (EJB 3.2) | Jakarta EE 10 (EJB Lite 4.0) | Spring Framework 7 |
+| **Servizi** | EJB 2.1 — solo descriptor XML | EJB 2.1 + `com.ibm.websphere.*` API | EJB 2.1 — solo descriptor XML | CDI `@ApplicationScoped` + JTA | EJB 3.2 `@Stateless` / `@Stateful` | EJB Lite 4.0 `@Stateless` / `@Stateful` | Spring `@Service` + `@Transactional` |
+| **Persistenza** | JDBC diretto via JNDI `DataSource` | JDBC diretto via JNDI `DataSource` | JDBC diretto via JNDI `DataSource` | **JPA 2.1** (EclipseLink) — `EntityManager` | JDBC diretto via JNDI `DataSource` | JDBC diretto via JNDI `DataSource` | `JdbcTemplate` via HikariCP |
+| **Database** | PostgreSQL 15+ | PostgreSQL 15+ | **H2 2.2.224 in-memory** | PostgreSQL 15+ | PostgreSQL 15+ | PostgreSQL 15+ | PostgreSQL 15+ |
+| **Carrello** | EJB Stateful + tabella DB | EJB Stateful + tabella DB | EJB Stateful + tabella DB | POJO in `HttpSession` | EJB 3.2 Stateful + tabella DB | EJB Lite 4.0 Stateful + tabella DB | `@SessionScope` Spring bean |
+| **Transazioni** | CMT (Container-Managed) | CMT (Container-Managed) | CMT (Container-Managed) | JTA `@Transactional` | CMT (Container-Managed) | CMT (Container-Managed) | Spring `@Transactional` |
+| **Web layer** | JSP 2.1 + JSTL 1.2 + EL 2.2 | JSP 2.1 + JSTL 1.2 + EL 2.2 | JSP 2.1 + JSTL 1.2 + EL 2.2 | JSP 2.3 + JSTL 1.2 + EL 3.0 | JSP 2.3 + JSTL 1.2 + EL 3.0 | Servlet 6.0 + Jakarta Pages 3.1 | JSP 3 + JSTL 3 + EL 6 |
+| **Web service** | JAX-RPC 1.1 (document/literal) | JAX-RPC 1.1 (document/literal) | JAX-RPC 1.1 (document/literal) | — | **JAX-WS 2.2** (SOAP) | JAX-WS (SOAP) | — |
+| **Deploy** | EAR — script wsadmin Jython | EAR — script wsadmin Jython | EAR — script wsadmin Jython | EAR — Liberty Maven plugin | EAR — Liberty Maven plugin | EAR — Liberty Maven plugin | WAR eseguibile `java -jar` |
+| **Configurazione** | Admin Console / wsadmin | Admin Console / wsadmin | Admin Console / wsadmin | `server.xml` + `bootstrap.properties` | `server.xml` + `server.env` | `server.xml` + variabili d'ambiente | `application.properties` |
+| **Email** | JavaMail via JNDI | JavaMail via JNDI | JavaMail via JNDI | Jakarta Mail via JNDI | JavaMail 1.5 via JNDI | Jakarta Mail 2.1 via JNDI | Spring Mail (`JavaMailSender`) |
+| **Init dati** | DDL + seed SQL manuali | DDL + seed SQL manuali | **Auto all'avvio** (`DatabaseInitializerBean`) | DDL + seed SQL manuali | DDL + seed SQL manuali | DDL + seed SQL manuali | DDL + seed SQL manuali |
+| **Dipendenze proprietarie** | Nessuna | **`was_public.jar`** (`com.ibm.websphere.appserver`) | Nessuna | Nessuna | Nessuna | Nessuna | Nessuna |
 
 ---
 
@@ -399,13 +414,13 @@ ibm-*-bnd.xmi (legacy)       ibm-*-bnd.xml (formato Liberty)
 
 ## Prerequisiti
 
-| Strumento | WebSphere | Liberty | Liberty-v2 | Liberty Jakarta EE | Spring Boot |
-|---|---|---|---|---|---|
-| Java JDK | 8 | **11** | **8 / 21 / 25** | **22+** | 25 |
-| Maven | 3.6+ | 3.6+ | 3.6+ | **3.9+** | 3.9+ |
-| PostgreSQL | 15+ | 15+ | 15+ | **15+** | 15+ |
-| Application server | IBM WAS 8.5.5 (installazione locale) | Scaricato automaticamente dal plugin Maven | Scaricato automaticamente dal plugin Maven | Scaricato automaticamente dal plugin Maven | Tomcat 11 embedded (nel JAR) |
-| Python 3 | Opzionale — generazione immagini SVG | Opzionale — generazione immagini SVG | Opzionale — generazione immagini SVG | Opzionale — generazione immagini SVG | Opzionale — generazione immagini SVG |
+| Strumento | WebSphere | WebSphere-v2 | WebSphere-v3 | Liberty | Liberty-v2 | Liberty Jakarta EE | Spring Boot |
+|---|---|---|---|---|---|---|---|
+| Java JDK | 8 | 8 | 8 | **11** | **8 / 21 / 25** | **22+** | 25 |
+| Maven | 3.6+ | 3.6+ | 3.6+ | 3.6+ | 3.6+ | **3.9+** | 3.9+ |
+| PostgreSQL | 15+ | 15+ | **Non necessario** | 15+ | 15+ | **15+** | 15+ |
+| Application server | IBM WAS 8.5.5 | IBM WAS 8.5.5 | IBM WAS 8.5.5 | Scaricato dal plugin Maven | Scaricato dal plugin Maven | Scaricato dal plugin Maven | Tomcat 11 embedded (nel JAR) |
+| Python 3 | Opzionale | Opzionale | Opzionale | Opzionale | Opzionale | Opzionale | Opzionale |
 
 ---
 
@@ -477,6 +492,16 @@ mvn clean package
 # Deploy tramite wsadmin — vedere WEBSPHERE_SETUP.md
 ```
 
+### 8. WebSphere V3 — H2 in-memory (richiede WAS 8.5.5)
+
+Variante standalone: non richiede PostgreSQL. Il database H2 viene inizializzato automaticamente all'avvio dell'applicazione. Prima del deploy è necessario configurare il provider JDBC H2 su WebSphere — vedere [`WEBSPHERE_SETUP.md`](PaskinoMercato-WebSphere-v3/WEBSPHERE_SETUP.md) per i dettagli.
+
+```bash
+cd PaskinoMercato-WebSphere-v3
+mvn clean package
+# Deploy tramite wsadmin — vedere WEBSPHERE_SETUP.md
+```
+
 ---
 
 ## Documentazione Dettagliata
@@ -487,6 +512,8 @@ mvn clean package
 | WebSphere | [`PaskinoMercato-WebSphere/WEBSPHERE_SETUP.md`](PaskinoMercato-WebSphere/WEBSPHERE_SETUP.md) | Configurazione JDBC provider, DataSource, sessione JavaMail su WAS |
 | WebSphere V2 | [`PaskinoMercato-WebSphere-v2/README.md`](PaskinoMercato-WebSphere-v2/README.md) | Stack EJB 2.1, API WAS proprietarie, `was_public.jar`, deploy wsadmin |
 | WebSphere V2 | [`PaskinoMercato-WebSphere-v2/WEBSPHERE_SETUP.md`](PaskinoMercato-WebSphere-v2/WEBSPHERE_SETUP.md) | Configurazione JDBC provider, DataSource, sessione JavaMail su WAS |
+| WebSphere V3 | [`PaskinoMercato-WebSphere-v3/README.md`](PaskinoMercato-WebSphere-v3/README.md) | Stack EJB 2.1, H2 in-memory, inizializzazione automatica DB, deploy wsadmin |
+| WebSphere V3 | [`PaskinoMercato-WebSphere-v3/WEBSPHERE_SETUP.md`](PaskinoMercato-WebSphere-v3/WEBSPHERE_SETUP.md) | Configurazione JDBC provider H2, DataSource, sessione JavaMail su WAS |
 | Liberty | [`PaskinoMercato-Liberty/README.md`](PaskinoMercato-Liberty/README.md) | Stack CDI + JPA, persistence unit, bean di servizio, Liberty server.xml |
 | Liberty V2 | [`PaskinoMercato-Liberty-v2/README.md`](PaskinoMercato-Liberty-v2/README.md) | Stack EJB 3.2 + JDBC, JAX-WS 2.2, migrazione da WebSphere-v2, server.xml Liberty |
 | Liberty V2 | [`PaskinoMercato-Liberty-v2/LIBERTY_SETUP.md`](PaskinoMercato-Liberty-v2/LIBERTY_SETUP.md) | Configurazione DataSource, JavaMail e JAX-WS su Open Liberty |

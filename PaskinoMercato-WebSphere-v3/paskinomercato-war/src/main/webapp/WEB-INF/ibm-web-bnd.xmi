@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<webappbnd:WebAppBinding xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:webappbnd="webappbnd.xmi"
+    xmi:id="WebAppBinding_1"
+    virtualHostName="default_host">
+
+    <webApp href="WEB-INF/web.xml#WebApp_ID"/>
+
+    <ejbRefBindings xmi:id="EJBRefBinding_1"
+        jndiName="ejb/it/paskinomercato/ejb/catalogo/CatalogoLocalHome">
+        <bindingEjbRef href="WEB-INF/web.xml#EJBLocalRef_Web_Catalogo"/>
+    </ejbRefBindings>
+
+    <ejbRefBindings xmi:id="EJBRefBinding_2"
+        jndiName="ejb/it/paskinomercato/ejb/ordine/OrdineLocalHome">
+        <bindingEjbRef href="WEB-INF/web.xml#EJBLocalRef_Web_Ordine"/>
+    </ejbRefBindings>
+
+    <ejbRefBindings xmi:id="EJBRefBinding_3"
+        jndiName="ejb/it/paskinomercato/ejb/cliente/ClienteLocalHome">
+        <bindingEjbRef href="WEB-INF/web.xml#EJBLocalRef_Web_Cliente"/>
+    </ejbRefBindings>
+
+    <ejbRefBindings xmi:id="EJBRefBinding_4"
+        jndiName="ejb/it/paskinomercato/ejb/carrello/CarrelloLocalHome">
+        <bindingEjbRef href="WEB-INF/web.xml#EJBLocalRef_Web_Carrello"/>
+    </ejbRefBindings>
+
+    <ejbRefBindings xmi:id="EJBRefBinding_5"
+        jndiName="ejb/it/paskinomercato/ejb/mail/MailLocalHome">
+        <bindingEjbRef href="WEB-INF/web.xml#EJBLocalRef_Web_Mail"/>
+    </ejbRefBindings>
+
+    <ejbRefBindings xmi:id="EJBRefBinding_6"
+        jndiName="ejb/it/paskinomercato/ejb/database/DatabaseInitializerLocalHome">
+        <bindingEjbRef href="WEB-INF/web.xml#EJBLocalRef_Web_DatabaseInitializer"/>
+    </ejbRefBindings>
+
+</webappbnd:WebAppBinding>
